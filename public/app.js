@@ -1,4 +1,10 @@
 const DEMOS = {
+  'axiom-studio': {
+    title: 'Axiom Studio v1.0 — Hybrid AI IDE & Multilingual GPU Graph',
+    size: '11.68 KB Wasm + 2.5 MB Daemon',
+    url: '/axiom-studio/',
+    repo: 'https://github.com/aminadav-ai/axiom-studio',
+  },
   'axiom-grid': {
     title: 'Axiom Grid v1.0 — 1,000,000-Cell GPU Spreadsheet',
     size: '21.65 KB Wasm (7.93 KB gzip)',

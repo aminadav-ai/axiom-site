@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Axiom Studio v1.0 — Гибридная ИИ-Среда Разработки (Ultra / Gemini 4 / Ollama)</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="studio-shell">
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-group">
+        <span class="brand-title">
+          <span class="dot-live" aria-hidden="true"></span>
+          <span>Axiom Studio v1.0</span>
+        </span>
+        <span id="daemon-badge" class="badge">Проверка демона...</span>
+      </div>
+
+      <!-- 3-Mode Hybrid AI Selector -->
+      <div class="topbar-group">
+        <div class="mode-seg" role="group" aria-label="Гибридный режим ИИ">
+          <button type="button" data-ai-mode="ultra" aria-pressed="true">1. Google One Ultra (0 ₪)</button>
+          <button type="button" data-ai-mode="gemini" aria-pressed="false">2. Gemini 4 API</button>
+          <button type="button" data-ai-mode="ollama" aria-pressed="false">3. Ollama Offline (0 ₪)</button>
+        </div>
+
+        <select id="model-select" class="ctrl-select" aria-label="Модель ИИ">
+          <option value="gemini-4-carbon">gemini-4-carbon ($2/$10, кэш $0.10)</option>
+          <option value="gemini-4-argon">gemini-4-argon ($2/$10, кэш $0.10)</option>
+          <option value="gemini-4-hydrogen">gemini-4-hydrogen ($1.5/$7.5)</option>
+          <option value="gemini-3.8-flash">gemini-3.8-flash ($0.75/$3.75)</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+          <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+        </select>
+        <button id="btn-refresh-models" type="button" class="btn" title="Загрузить список моделей с вашего API-ключа">Модели</button>
+      </div>
+
+      <div class="topbar-group">
+        <span id="budget-badge" class="badge badge-budget mono">Бюджет: 80.00 ₪ | Расход: 0.00 ₪</span>
+        <button id="btn-open-import" type="button" class="btn btn-emerald">Импорт из Antigravity</button>
+        <button id="btn-open-key" type="button" class="btn">Ключ API</button>
+        <button id="btn-theme" type="button" class="btn">Тема</button>
+      </div>
+    </header>
+
+    <!-- 3-PANE WORKSPACE -->
+    <div class="workspace-grid">
+      <!-- LEFT: Project & File Explorer -->
+      <aside class="pane-left" aria-label="Проводник проектов">
+        <div class="pane-hdr">
+          <span>Проекты</span>
+          <select id="project-select" class="ctrl-select" style="max-inline-size: 9.5rem;" aria-label="Выбор проекта"></select>
+        </div>
+        <ul id="file-list" class="file-list" role="listbox" aria-label="Файлы проекта"></ul>
+      </aside>
+
+      <!-- CENTER: GPU Graph / Code / Artifacts + Integrated Axiom-Shell -->
+      <main class="pane-center">
+        <section class="center-top">
+          <div class="tab-strip">
+            <div class="tab-buttons" role="tablist">
+              <button type="button" class="tab-btn" role="tab" data-tab="gpu" aria-selected="true">GPU Граф #Hash &amp; Z3 (WebGL2)</button>
+              <button type="button" class="tab-btn" role="tab" data-tab="code" aria-selected="false">Редактор кода (.ax / .rs)</button>
+              <button type="button" class="tab-btn" role="tab" data-tab="artifacts" aria-selected="false">Артефакты (RU План &amp; Задачи)</button>
+            </div>
+            <div class="topbar-group">
+              <span id="active-file-label" class="mono" style="font-size: 0.77rem; color: var(--muted);">studio_core.ax</span>
+              <button id="btn-save-file" type="button" class="btn">Сохранить [Ctrl+S]</button>
+              <button id="btn-verify-ax" type="button" class="btn btn-primary">Проверить Z3 + Wasm</button>
+            </div>
+          </div>
+
+          <!-- Panel 1: Hardware WebGL2 Cyrillic+English GPU Graph (`studio_core.wasm`) -->
+          <div id="panel-gpu" class="stage-panel">
+            <canvas id="studio-gpu-canvas" aria-label="Аппаратный WebGL2 граф узлов Axiom.Flux и Z3 контрактов"></canvas>
+          </div>
+
+          <!-- Panel 2: Code Editor -->
+          <div id="panel-code" class="stage-panel" hidden>
+            <textarea id="code-editor" class="code-area" spellcheck="false" aria-label="Редактор исходного кода"></textarea>
+          </div>
+
+          <!-- Panel 3: Imported Russian Artifacts (`implementation_plan.md` & `task.md`) -->
+          <div id="panel-artifacts" class="stage-panel" hidden>
+            <div class="artifacts-split">
+              <div class="artifact-col">
+                <div class="pane-hdr"><span>implementation_plan.md (RU)</span></div>
+                <textarea id="plan-editor" class="code-area" spellcheck="false" aria-label="План внедрения на русском языке"></textarea>
+              </div>
+              <div class="artifact-col">
+                <div class="pane-hdr"><span>task.md (RU)</span></div>
+                <textarea id="task-editor" class="code-area" spellcheck="false" aria-label="Список задач"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bottom Integrated Axiom-Shell & Z3 Diagnostics -->
+        <section class="center-bottom" aria-label="Встроенный терминал Axiom-Shell и вывод Z3">
+          <div class="pane-hdr" style="background: #0d1424; border-color: #1e2d4a;">
+            <span>Axiom-Shell &amp; Z3 Verifier (Логи сохраняются в logs/)</span>
+            <div class="topbar-group">
+              <button type="button" class="btn" data-quick-cmd="git status -s">git status</button>
+              <button type="button" class="btn" data-quick-cmd="ls -lh logs/ | tail -n 5">Логи</button>
+              <button id="btn-copy-agy" type="button" class="btn btn-emerald" title="Скопировать команду запуска официального клиента agy по подписке Google One Ultra">Команда agy (Ultra 0 ₪)</button>
+            </div>
+          </div>
+          <pre id="shell-output" class="shell-log">Axiom Studio v1.0 готова. Нажмите «Импорт из Antigravity», чтобы подтянуть всю историю нашей беседы и планы!</pre>
+          <form id="shell-form" class="shell-bar">
+            <span class="mono" style="color: var(--emerald);">$</span>
+            <input id="shell-input" type="text" placeholder="Введите команду (например: cargo test, git status, ./scripts/run_checks.sh)..." aria-label="Команда оболочки">
+            <button type="submit" class="btn btn-primary">Выполнить</button>
+          </form>
+        </section>
+      </main>
+
+      <!-- RIGHT: Hybrid Multi-Brain AI Chat -->
+      <aside class="pane-right" aria-label="Гибридный чат с ИИ-агентом">
+        <div class="pane-hdr">
+          <span id="chat-mode-title">Чат: Google One Ultra Bridge (0 ₪)</span>
+          <span id="session-pill" class="mono" style="font-size: 0.7rem;">Локально</span>
+        </div>
+        <div id="chat-feed" class="chat-feed"></div>
+        <form id="chat-form" class="chat-composer">
+          <textarea id="chat-input" placeholder="Напишите задачу по-русски (Ctrl+Enter — отправить)..." aria-label="Сообщение агенту"></textarea>
+          <div class="composer-actions">
+            <span id="last-cost-label" class="mono" style="font-size: 0.74rem; color: var(--muted);">Шаг: 0.000 ₪ (0 ток.)</span>
+            <button id="btn-send-chat" type="submit" class="btn btn-primary">Отправить</button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  </div>
+
+  <!-- MODAL 1: Import Antigravity Brain Session (<dialog closedby="any">) -->
+  <dialog id="dialog-import" class="studio-dialog" closedby="any" aria-labelledby="import-title">
+    <h3 id="import-title" style="margin-block: 0 0.4rem;">Импорт диалога и артефактов из Antigravity</h3>
+    <p style="margin: 0; color: var(--muted); font-size: 0.84rem;">
+      Прямое чтение из <code>~/.gemini/antigravity/brain/</code> (история сообщений <code>transcript.jsonl</code> + русские планы <code>implementation_plan.md</code> и <code>task.md</code>):
+    </p>
+    <ul id="session-list" class="session-list"></ul>
+    <div style="display: flex; justify-content: flex-end;">
+      <button type="button" class="btn" data-close-dialog="dialog-import">Закрыть</button>
+    </div>
+  </dialog>
+
+  <!-- MODAL 2: Save GEMINI_API_KEY Privately to ~/.env (<dialog closedby="any">) -->
+  <dialog id="dialog-key" class="studio-dialog" closedby="any" aria-labelledby="key-title">
+    <h3 id="key-title" style="margin-block: 0 0.4rem;">Настройка GEMINI_API_KEY (Локально в ~/.env)</h3>
+    <p style="margin-block: 0 0.8rem; color: var(--muted); font-size: 0.84rem;">
+      Ключ сохраняется локальным демоном строго в <code>~/.env</code> с правами <code>0600</code> и никогда не попадает в Git или логи. Получить ключ можно в <a href="https://aistudio.google.com/app/api-keys" target="_blank" rel="noopener">Google AI Studio</a>.
+    </p>
+    <form id="key-form" style="display: flex; flex-direction: column; gap: 0.7rem;">
+      <input id="key-input" type="password" class="ctrl-input mono" placeholder="AIzaSy..." autocomplete="off" aria-label="GEMINI_API_KEY">
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button type="button" class="btn" data-close-dialog="dialog-key">Отмена</button>
+        <button type="submit" class="btn btn-primary">Сохранить локально (0600)</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./studio_app.js"></script>
+</body>
+</html>
