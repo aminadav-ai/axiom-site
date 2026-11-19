@@ -817,6 +817,98 @@ pre, code, textarea.code-area, .mono {
   display: none;
 }
 
+/* ================= ADD CONTEXT POPOVER MENU (`+` button) ================= */
+.context-popover {
+  inline-size: 15.5rem;
+  padding: 0.4rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+@supports (position-area: block-start) {
+  .context-popover {
+    inset: auto;
+    margin: 0 0 0.5rem 0;
+    position-area: block-start span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+  }
+}
+
+.context-popover-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.28rem 0.55rem 0.4rem;
+  font-size: 0.78em;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.context-back-btn {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.3rem;
+}
+
+.context-back-btn:hover {
+  background: var(--surface-hover);
+}
+
+.context-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.context-popover-list[hidden] {
+  display: none;
+}
+
+.context-sub-scroll {
+  max-block-size: 14rem;
+  overflow-y: auto;
+}
+
+.context-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  inline-size: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.87em;
+  font-weight: 550;
+  padding: 0.45rem 0.58rem;
+  border-radius: 0.48rem;
+  cursor: pointer;
+  text-align: start;
+}
+
+.context-item:hover {
+  background: var(--surface-hover);
+}
+
+.ctx-ico {
+  inline-size: 1.15rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.context-divider {
+  block-size: 1px;
+  background: var(--border);
+  margin: 0.25rem 0.3rem;
+}
+
 /* ================= OPTIONAL RIGHT INSPECTOR DRAWER ================= */
 .inspector-drawer {
   flex: 0 0 32rem;

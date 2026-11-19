@@ -1,0 +1,26 @@
+
+ ⛅️ wrangler 4.165.0
+────────────────────
+🌀 Building list of assets...
+✨ Read 70 files from the assets directory /home/aminadav/Projects/axiom-site/public
+🌀 Starting asset upload...
+🌀 Found 3 new or modified static assets to upload. Proceeding with upload...
++ /axiom-studio/index.html
++ /axiom-studio/styles.css
++ /axiom-studio/studio_app.js
+Uploaded 1 of 3 assets
+Uploaded 2 of 3 assets
+Uploaded 3 of 3 assets
+✨ Success! Uploaded 3 files (55 already uploaded) (1.51 sec)
+
+Total Upload: 1.21 KiB / gzip: 0.59 KiB
+Your Worker has access to the following bindings:
+Binding            Resource      
+env.ASSETS         Assets        
+
+Uploaded axiom-lang-org (9.78 sec)
+Deployed axiom-lang-org triggers (5.28 sec)
+  https://axiom-lang-org.fbhcdbhf.workers.dev
+  axiom-lang.org (custom domain)
+  www.axiom-lang.org (custom domain)
+Current Version ID: caaa0cec-ed00-4bbc-b4d8-ea3e042fdd5c

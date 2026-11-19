@@ -82,14 +82,44 @@
           ></textarea>
           <div class="composer-toolbar">
             <div class="composer-toolbar-left">
-              <button id="btn-quick-new" type="button" class="composer-icon-btn" title="Начать новый чистый диалог (экономит токены)" aria-label="Новый диалог">+</button>
-              <button id="btn-attach-image" type="button" class="composer-icon-btn" title="Прикрепить картинку (или Ctrl+V / перетащить сюда)" aria-label="Прикрепить картинку">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-              </button>
+              <button
+                id="btn-context-menu"
+                type="button"
+                popovertarget="context-menu-popover"
+                class="composer-icon-btn"
+                title="Добавить контекст (картинки, файлы, проекты, действия)"
+                aria-label="Добавить контекст"
+              >+</button>
+              <div id="context-menu-popover" popover="auto" class="context-popover">
+                <div class="context-popover-hdr">
+                  <span id="context-popover-title">Добавить контекст</span>
+                  <button id="btn-context-back" type="button" class="context-back-btn" hidden>← Назад</button>
+                </div>
+                <div id="context-menu-root" class="context-popover-list">
+                  <button id="ctx-act-image" type="button" class="context-item">
+                    <span class="ctx-ico" aria-hidden="true">🖼</span>
+                    <span>Картинка / Скриншот</span>
+                  </button>
+                  <button id="ctx-act-files" type="button" class="context-item">
+                    <span class="ctx-ico" aria-hidden="true">📄</span>
+                    <span>Файлы проекта</span>
+                  </button>
+                  <button id="ctx-act-projects" type="button" class="context-item">
+                    <span class="ctx-ico" aria-hidden="true">📁</span>
+                    <span>Упомянуть проект</span>
+                  </button>
+                  <button id="ctx-act-verify" type="button" class="context-item">
+                    <span class="ctx-ico" aria-hidden="true">⚡</span>
+                    <span>Проверить Z3 + Wasm</span>
+                  </button>
+                  <div class="context-divider"></div>
+                  <button id="ctx-act-new-chat" type="button" class="context-item">
+                    <span class="ctx-ico" aria-hidden="true">✦</span>
+                    <span>Новый чистый диалог</span>
+                  </button>
+                </div>
+                <div id="context-menu-sub" class="context-popover-list context-sub-scroll" hidden></div>
+              </div>
               <label for="model-select" class="visually-hidden">Выбор модели Gemini</label>
               <select id="model-select" class="model-inline-select" title="Модель Gemini API">
                 <option value="gemini-4-carbon">Gemini 4 Carbon ($2/$10)</option>

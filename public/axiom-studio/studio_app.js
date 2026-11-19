@@ -892,7 +892,109 @@ chatInput.addEventListener('keydown', (event) => {
 });
 
 document.getElementById('btn-new-conv').addEventListener('click', () => startNewConversation(activeProjectName));
-document.getElementById('btn-quick-new').addEventListener('click', () => startNewConversation(activeProjectName));
+
+// --- `+` Add Context Popover Menu ---
+const contextPopover = document.getElementById('context-menu-popover');
+const contextTitle = document.getElementById('context-popover-title');
+const contextBackBtn = document.getElementById('btn-context-back');
+const contextRoot = document.getElementById('context-menu-root');
+const contextSub = document.getElementById('context-menu-sub');
+
+function resetContextPopoverView() {
+  if (!contextRoot || !contextSub || !contextTitle || !contextBackBtn) return;
+  contextTitle.textContent = 'Добавить контекст';
+  contextBackBtn.hidden = true;
+  contextRoot.hidden = false;
+  contextSub.hidden = true;
+  contextSub.textContent = '';
+}
+
+function closeContextPopover() {
+  if (contextPopover && typeof contextPopover.hidePopover === 'function') {
+    try {
+      contextPopover.hidePopover();
+    } catch {
+      // already closed
+    }
+  }
+  resetContextPopoverView();
+}
+
+function insertTokenIntoChat(token) {
+  const cur = chatInput.value;
+  const sep = cur.length > 0 && !/\s$/.test(cur) ? ' ' : '';
+  chatInput.value = `${cur}${sep}${token} `;
+  closeContextPopover();
+  chatInput.focus();
+}
+
+contextPopover?.addEventListener('toggle', (e) => {
+  if (e.newState === 'open') {
+    resetContextPopoverView();
+  }
+});
+
+contextBackBtn?.addEventListener('click', resetContextPopoverView);
+
+document.getElementById('ctx-act-image')?.addEventListener('click', () => {
+  closeContextPopover();
+  chatImageInput?.click();
+});
+
+document.getElementById('ctx-act-files')?.addEventListener('click', () => {
+  const proj = getProjectByName(activeProjectName);
+  const files = proj.files || [];
+  contextTitle.textContent = `Файлы: ${proj.name}`;
+  contextBackBtn.hidden = false;
+  contextRoot.hidden = true;
+  contextSub.hidden = false;
+  contextSub.textContent = '';
+
+  if (files.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'setting-sub';
+    empty.style.padding = '0.4rem 0.6rem';
+    empty.textContent = 'Нет файлов в проекте';
+    contextSub.appendChild(empty);
+    return;
+  }
+
+  for (const f of files.slice(0, 40)) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'context-item';
+    btn.textContent = `📄 ${f}`;
+    btn.addEventListener('click', () => insertTokenIntoChat(`@${proj.name}/${f}`));
+    contextSub.appendChild(btn);
+  }
+});
+
+document.getElementById('ctx-act-projects')?.addEventListener('click', () => {
+  contextTitle.textContent = 'Упомянуть проект';
+  contextBackBtn.hidden = false;
+  contextRoot.hidden = true;
+  contextSub.hidden = false;
+  contextSub.textContent = '';
+
+  for (const p of projects) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'context-item';
+    btn.textContent = `📁 ${p.name}`;
+    btn.addEventListener('click', () => insertTokenIntoChat(`@${p.name}`));
+    contextSub.appendChild(btn);
+  }
+});
+
+document.getElementById('ctx-act-verify')?.addEventListener('click', () => {
+  closeContextPopover();
+  verifyCurrentAx();
+});
+
+document.getElementById('ctx-act-new-chat')?.addEventListener('click', () => {
+  closeContextPopover();
+  startNewConversation(activeProjectName);
+});
 
 // --- Antigravity Brain History Importer ---
 async function importAntigravitySession(sessionId) {
