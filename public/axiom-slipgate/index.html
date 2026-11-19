@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Axiom Slipgate HD GPU — True 3D Polygonal Shooter in 28.6 KB Axiom.Strata + WebGL2</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">100% Axiom (Telos + Flux + Strata -[Mem, Gpu]-&gt;) • Zero rustc • HD WebGL2</span>
+        <h1>Axiom Slipgate <span class="sub">v2.0 True 3D Polygonal Citadel &amp; Bump-Mapped GPU Engine</span></h1>
+      </div>
+      <div class="badges">
+        <span class="badge" id="wasm-size-badge">Wasm: 30.38 KB (11.66 KB gzip)</span>
+        <a class="badge badge-link" href="https://github.com/aminadav-ai/axiom-slipgate" target="_blank" rel="noopener noreferrer">Source (.ax)</a>
+        <a class="badge badge-link" href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener noreferrer">Axiom Compiler</a>
+      </div>
+    </header>
+
+    <section class="stage-card" aria-label="HD 3D WebGL2 Game Viewport">
+      <div class="hud-strip">
+        <div class="stat">
+          <span class="stat-label">Health</span>
+          <strong id="stat-hp">100</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Armor</span>
+          <strong id="stat-armor">50</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Shells</span>
+          <strong id="stat-ammo">28</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Monsters</span>
+          <strong id="stat-kills">0 / 10</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">GPU FPS</span>
+          <strong id="stat-fps">60</strong>
+        </div>
+        <div class="actions">
+          <button type="button" id="btn-sound" class="btn" aria-pressed="true">Sound: ON</button>
+          <button type="button" id="btn-fullscreen" class="btn">Fullscreen</button>
+          <button type="button" id="btn-reset" class="btn btn-accent" title="Shortcut: R">Restart (R)</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="viewport-box">
+        <canvas id="fps-canvas" width="1280" height="720" aria-label="3D polygonal canyon with overhead slatted wooden bridge, fluted stone pillars, vaulted rafter hall, 3D Shambler monster, and twin-barrel Super-Shotgun"></canvas>
+        <div class="crosshair" aria-hidden="true">+</div>
+        <div class="quake-hud" aria-hidden="true">
+          <div class="q-box"><span class="q-lbl">HP</span><strong id="q-hp">100</strong></div>
+          <div class="q-box"><span class="q-lbl">ARMOR</span><strong id="q-arm">50</strong></div>
+          <div class="q-box"><span class="q-lbl">SHELLS</span><strong id="q-ammo">28</strong></div>
+        </div>
+        <div id="overlay-banner" class="overlay-banner" hidden>
+          <strong id="overlay-title"></strong>
+          <span id="overlay-sub"></span>
+        </div>
+      </div>
+
+      <div class="timetravel-bar">
+        <div class="tt-header">
+          <label for="rewind-slider">Strata Linear-Memory 3D Combat Time-Travel</label>
+          <span id="tt-status" class="tt-status">Click 3D Viewport for Full 360° + Up/Down Mouse-Look</span>
+        </div>
+        <div class="tt-controls">
+          <input
+            type="range"
+            id="rewind-slider"
+            min="0"
+            max="119"
+            step="1"
+            value="0"
+            aria-valuetext="Live combat frame"
+          >
+          <button type="button" id="btn-resume" class="btn" hidden>Resume Fight</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="help-grid">
+      <div class="info-card">
+        <h2>Full 3D Tactical Controls</h2>
+        <p>Click the 3D scene for <strong>Up/Down &amp; 360° Mouse-Look</strong> (<kbd>Esc</kbd> unlocks). Move with <kbd>WASD</kbd> or <kbd>Arrow Keys</kbd>, jump onto side terraces &amp; bridges with <kbd>Space</kbd> / <strong>Right-Click</strong>, fire the <strong>Super-Shotgun</strong> with <strong>Left-Click</strong> (<kbd>Ctrl</kbd> / <kbd>F</kbd>), and press <kbd>R</kbd> anytime for <strong>Instant Restart</strong> without leaving mouse-look!</p>
+      </div>
+      <div class="info-card">
+        <h2>Axiom.Strata + <code>-[Gpu]-&gt;</code> Architecture</h2>
+        <p><code>src/slipgate.ax</code> synthesizes 8 seamless <code>256×256</code> Worley/FBM textures with micro-relief heightmaps (25,300+ gradations), exact 3D pillar/wall line-of-sight cover, walkable multi-tier terraces, diagonal rafters, and sculpted 3D Shambler/Knight/Grunt meshes in <code>~0.2 ms/frame</code> inside a <strong>~30 KB Wasm binary</strong>.</p>
+      </div>
+    </footer>
+  </main>
+  <script type="module" src="boot.js"></script>
+</body>
+</html>

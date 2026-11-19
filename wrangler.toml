@@ -1,0 +1,14 @@
+name = "axiom-lang-org"
+main = "src/worker.js"
+compatibility_date = "2025-04-01"
+workers_dev = true
+
+routes = [
+  { pattern = "axiom-lang.org", custom_domain = true },
+  { pattern = "www.axiom-lang.org", custom_domain = true }
+]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "auto-trailing-slash"

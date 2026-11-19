@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Axiom Color Lines 98 v3.0 GPU HD — True 3D Refractive Glass &amp; Marble in 15.3 KB Axiom Wasm</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">100% Axiom (Telos + Flux + Strata -[Mem, Gpu]-&gt;) • Zero rustc • HD WebGL2</span>
+        <h1>Axiom Color Lines 98 <span class="sub">v3.0 True-3D Refractive Glass &amp; Carved Marble</span></h1>
+      </div>
+      <div class="badges">
+        <span class="badge" id="wasm-size-badge">Wasm: 15.32 KB (5.82 KB gzip)</span>
+        <a class="badge badge-link" href="https://github.com/aminadav-ai/axiom-color-lines" target="_blank" rel="noopener noreferrer">Source (.ax)</a>
+        <a class="badge badge-link" href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener noreferrer">Axiom Compiler</a>
+      </div>
+    </header>
+
+    <section class="board-layout" aria-label="Color Lines 98 3D WebGL2 Game Area">
+      <div class="canvas-card">
+        <div class="hud-strip">
+          <div class="stat">
+            <span class="stat-label">Score</span>
+            <strong id="stat-score">0</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Best</span>
+            <strong id="stat-best">0</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Turn</span>
+            <strong id="stat-turn">0</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Spheres</span>
+            <strong id="stat-balls">5 / 81</strong>
+          </div>
+          <div class="hud-btns">
+            <button type="button" id="btn-sound" class="btn" aria-pressed="true">Sound: ON</button>
+            <button type="button" id="btn-new" class="btn btn-accent" title="Shortcut: R">New Game (R)</button>
+          </div>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="board-canvas" width="960" height="860" aria-label="True-3D carved Nero Marquina and Crema Marfil marble board with high-poly refractive glass spheres and animated parabolic path hopping"></canvas>
+          <div id="status-toast" class="status-toast" hidden></div>
+        </div>
+
+        <div class="timetravel-bar">
+          <div class="tt-header">
+            <label for="turn-slider">Strata Linear-Memory Turn Time-Travel</label>
+            <span id="tt-label" class="tt-status">Turn #0</span>
+          </div>
+          <div class="tt-controls">
+            <button type="button" id="btn-undo" class="btn" title="Shortcut: Z">Undo (Z)</button>
+            <input
+              type="range"
+              id="turn-slider"
+              min="0"
+              max="1"
+              step="1"
+              value="0"
+              aria-valuetext="Turn 0"
+            >
+          </div>
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        <div class="info-card">
+          <h2>How to Play</h2>
+          <p>Click any translucent 3D glass jewel sphere to levitate &amp; select it, then click a reachable carved marble socket. Watch and hear the sphere <strong>arc step-by-step along the shortest route</strong> (<em>tick-tick-tick!</em>) casting live colored caustics across the marble veins. Align <strong>5+ matching spheres</strong> to shatter them into crystal shards! Press <kbd>R</kbd> anytime for a new board or <kbd>Z</kbd> to undo.</p>
+        </div>
+        <div class="info-card">
+          <h2>WebGL2 3D GPU Engine in <code>15.3 KB</code> of Axiom</h2>
+          <ul>
+            <li><strong>High-Poly Refractive 3D Jewels:</strong> 224-triangle smooth-normal 3D spheres per marble with GLSL refraction, Beer-Lambert core absorption, subsurface caustic focus, Schlick Fresnel rim reflection, and dual specular highlights.</li>
+            <li><strong>Bump-Mapped Carved Marble &amp; Walnut:</strong> 4 seamless <code>256×256</code> FBM textures + socket heightmaps synthesized inside <code>Axiom.Strata</code> 8 MiB linear memory.</li>
+            <li><strong>Real-Time Colored Floor Caustics &amp; Shadows:</strong> Every stationary and hopping jewel casts soft ambient contact shadows and focused gemstone caustics onto the marble below.</li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script type="module" src="boot.js"></script>
+</body>
+</html>

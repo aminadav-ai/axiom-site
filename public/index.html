@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Axiom (axiom-lang.org) — The AI-Native Verified Programming Stack</title>
+  <meta name="description" content="Axiom is an AI-native programming stack uniting Z3 mathematical contracts (Telos), 256-bit content-addressed capability graphs (Flux), and zero-rustc WebAssembly & x86_64 GPU execution (Strata).">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>Axiom</span>
+        <span class="brand-tag">v0.2 + Axiom-UI v1.0</span>
+      </a>
+
+      <nav aria-label="Primary">
+        <ul class="nav-links">
+          <li><a href="/" aria-current="page">Overview</a></li>
+          <li><a href="#architecture">3-Layer Stack</a></li>
+          <li><a href="#stage2-ui">Axiom-UI Apps</a></li>
+          <li><a href="#stage1-games">3D GPU Games</a></li>
+          <li><a href="#benchmarks">Benchmarks</a></li>
+          <li><a href="#roadmap">Roadmap</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <button id="theme-toggle" type="button" class="btn btn-sm">Theme</button>
+        <a class="btn btn-sm btn-primary" href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container">
+        <div class="eyebrow">Stage 1 (axiom-lang) &amp; Stage 2 (axiom-ui) Live in Production</div>
+        <h1>Software Written by AI Agents. Verified by Mathematics.</h1>
+        <p class="hero-sub">
+          <strong>Axiom</strong> replaces human-era boilerplate, silent AI placeholder stubs, ambient dependency privileges, and 250 MB Electron bundles with a <strong>3-layer verified programming stack</strong> that compiles directly to kilobyte-scale W3C WebAssembly and Linux <code>x86_64</code> machine code — with <strong>zero <code>rustc</code></strong> and <strong>1-draw-call hardware GPU rendering</strong>.
+        </p>
+
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="#stage2-ui" data-launch-demo="axiom-workspace">Launch Multi-Window GPU OS (20.57 KB)</a>
+          <a class="btn btn-emerald" href="#stage2-ui" data-launch-demo="axiom-grid">Open 1,000,000-Cell GPU Sheet (21.65 KB)</a>
+          <a class="btn" href="#stage1-games" data-launch-demo="axiom-slipgate">Play 3D Quake-Class Shooter (30.38 KB)</a>
+          <a class="btn" href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener">Explore Compiler Source</a>
+        </div>
+
+        <div class="kpi-strip">
+          <div class="kpi-card">
+            <span class="kpi-val">6.84 KB</span>
+            <span class="kpi-lbl">Gzipped 4-Window GPU Desktop OS (<code>workspace.wasm</code>)</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-val">1,000,000</span>
+            <span class="kpi-lbl">Virtualized GPU Spreadsheet Cells @ <code>0.50 ms</code> Layout</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-val">1 Draw Call</span>
+            <span class="kpi-lbl">Unified WebGL2 SDF + HiDPI Font Atlas Compositor</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-val">100% Z3</span>
+            <span class="kpi-lbl">Compile-Time Anti-Stub SMT Proofs &amp; Non-Zero Guards</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-val">0 Ambient I/O</span>
+            <span class="kpi-lbl">Unforgeable <code>axiom.passport</code> Capability Gatekeeper</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY HUMAN LANGUAGES FAIL IN THE AI ERA -->
+    <section class="section">
+      <div class="container">
+        <div class="section-hdr">
+          <h2>Why Human-Era Languages Break When AI Writes the Code</h2>
+          <p>Python, TypeScript, C++, Go, and Rust were shaped around human typing habits and manual code review. Autonomous multi-agent engineering exposes three structural flaws:</p>
+        </div>
+
+        <div class="grid-3">
+          <article class="card">
+            <h3>1. Silent Stubs Compile Cleanly <span class="pill">Solved by Telos</span></h3>
+            <p>An LLM agent can return <code>balance</code> without deducting <code>amount</code> or emit a placeholder stub, and traditional typecheckers accept it. In Axiom, <strong>Microsoft Z3</strong> proves every postcondition (<code>ens</code>) mathematically before a node can enter the graph — or rejects it with an exact counterexample.</p>
+          </article>
+
+          <article class="card">
+            <h3>2. Hidden Supply-Chain Privileges <span class="pill">Solved by Flux</span></h3>
+            <p>In npm or Cargo ecosystems, a transitive helper 15 levels deep can read <code>~/.ssh</code> or open outbound sockets. In Axiom, functions live in a fileless 256-bit content-addressed graph with explicit capability arrows <code>-[Net("api.bank.com"), Mem]-&gt;</code> and opaque <code>Secret&lt;T&gt;</code> taint pipes.</p>
+          </article>
+
+          <article class="card">
+            <h3>3. Electron &amp; DOM Bloat <span class="pill">Solved by Strata + UI</span></h3>
+            <p>Shipping 250 MB of Chromium + V8 + CSS reflow just to render tables and windows wastes gigabytes of RAM and millions of LLM context tokens. Axiom compiles directly to <code>15–30 KB</code> standalone WebAssembly driving hardware WebGL2 in a single instanced draw call.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE THREE ORTHOGONAL LAYERS -->
+    <section id="architecture" class="section">
+      <div class="container">
+        <div class="section-hdr">
+          <h2>The Three Orthogonal Layers of Project Axiom</h2>
+          <p>Instead of juggling separate languages for specifications, backends, shaders, and UI, Axiom separates software strictly by the physics of computation — all three layers are implemented natively in <a href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener"><code>aminadav-ai/axiom-lang</code></a>:</p>
+        </div>
+
+        <div class="grid-3">
+          <article class="card">
+            <h3>Axiom.Telos <span class="pill">Intent &amp; Proofs</span></h3>
+            <p>Preconditions (<code>req</code>), postconditions (<code>ens</code>), division-by-zero prevention, scroll/layout bounds, and vacuous-precondition reward-hacking checks proved mechanically at compile time via Z3 SMT.</p>
+          </article>
+
+          <article class="card">
+            <h3>Axiom.Flux <span class="pill">Semantic Graph</span></h3>
+            <p>De Bruijn normalized, SHA-256 content-addressed functions (zero import collisions, automatic cross-repo deduplication), capability effect arrows, <code>Secret&lt;T&gt;</code> exfiltration blocking, and deterministic <code>axiom.passport</code> manifests.</p>
+          </article>
+
+          <article class="card">
+            <h3>Axiom.Strata <span class="pill">Bare Silicon &amp; GPU</span></h3>
+            <p>Bounded loops (<code>while cond max N</code>), deterministic 8 MiB hardware-masked linear memory, static zero-copy string pools, <code>-[Mem, Gpu]-&gt;</code> streams, and direct zero-<code>rustc</code> emission to <code>.wasm</code> and <code>1.45 KB</code> Linux <code>x86_64</code> ELF64 binaries.</p>
+          </article>
+        </div>
+
+        <div class="proof-grid">
+          <div class="code-panel">
+            <div class="code-hdr">
+              <span>Compile-Time Z3 Anti-Stub Rejection</span>
+              <span>Axiom.Telos</span>
+            </div>
+            <pre><code>fn withdraw_stub(balance: i64, amount: i64) -&gt; i64
+  req balance &gt;= amount &amp;&amp; amount &gt; 0
+  ens result == balance - amount &amp;&amp; result &gt;= 0
+{
+  balance // &lt;-- AI agent forgot to deduct `amount`!
+}
+
+// Compiler Output (Rejected in 42ms):
+// error [E050_CONTRACT_VIOLATION]: Postcondition #1 failed
+//   counterexample: { amount = 1, balance = 1, result = 1 }</code></pre>
+          </div>
+
+          <div class="code-panel">
+            <div class="code-hdr">
+              <span>Unforgeable Compiler Security Passport</span>
+              <span>Axiom.Flux</span>
+            </div>
+            <pre><code>=== AXIOM SECURITY PASSPORT ===
+Node:               #768a631876e7 (checkout)
+Touches Secret&lt;T&gt;:  YES
+Capabilities:
+  [CAP]  Audit                via: checkout -&gt; send_bank_wire
+  [CAP]  Net("api.mybank.com") via: checkout -&gt; send_bank_wire
+Secret Data-Flow Pipes:
+  [PIPE] Secret&lt;str&gt; -&gt; Net.post("api.mybank.com")
+  [SAFE] Disk / Log / Unpinned Leaks: 0 (proved by taint checker)</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2 SHOWCASE: AXIOM-UI ZERO-DOM HARDWARE GPU APPS -->
+    <section id="stage2-ui" class="section">
+      <div class="container">
+        <div class="section-hdr">
+          <h2>Stage 2 Live Showcase: <code>axiom-ui</code> Zero-DOM Hardware GPU Suite</h2>
+          <p>Four complete desktop-class applications written <strong>100% in Axiom</strong> without a single HTML widget or CSS layout rule. Click any preview to run the live WebAssembly binary right on this page, or open it full-screen:</p>
+        </div>
+
+        <div class="showcase-grid">
+          <!-- Axiom Grid -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-grid">
+              <img src="/previews/axiom-grid.png" alt="Axiom Grid 1,000,000-cell GPU spreadsheet screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">21.65 KB Wasm</span>
+                <span class="badge-dark">7.93 KB Gzip</span>
+                <span class="badge-dark">1,000,000 Cells</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Grid v1.0 — 1M-Cell GPU Spreadsheet</h3>
+              <p>Excel-class <code>1,000 &times; 1,000</code> (<code>A1..ALL1000</code>) virtualized spreadsheet with live <code>=SUM</code>, <code>=AVG</code>, <code>=MAX</code> &amp; cell arithmetic, emerald dependency highlighting, editable <code>fx</code> bar, live bound Q1–Q4 GPU charts, and Strata Time-Travel.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-grid">Run Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-grid/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-grid" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Axiom Workspace -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-workspace">
+              <img src="/previews/axiom-workspace.png" alt="Axiom Workspace 4-window GPU desktop OS screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">20.57 KB Wasm</span>
+                <span class="badge-dark">6.84 KB Gzip</span>
+                <span class="badge-dark">1 Draw Call</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Workspace v1.0 — "The Electron Killer"</h3>
+              <p>Multi-window GPU Desktop OS featuring 4 overlapping, draggable, hardware-clipped resizable windows: live <code>Flux Secret&lt;T&gt;</code> Taint Graph, Electron vs Axiom RAM Stress-Test, Z3 Safe-Division Calculator, SDF Shader Studio, and full-OS Time-Travel.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-workspace">Run Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-workspace/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-workspace" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Axiom Capsule Browser -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-capsule-browser">
+              <img src="/previews/axiom-capsule-browser.png" alt="Axiom Capsule Browser prototype screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">21.21 KB Wasm</span>
+                <span class="badge-dark">7.04 KB Gzip</span>
+                <span class="badge-dark">0.14 ms HTML Parse</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Capsule Browser v1.0 — Future + Legacy Web</h3>
+              <p>Working prototype of <code>axiom-web</code>: executes verified <code>.axw</code> capsules natively on GPU, halts spyware capsules <strong>before Wasm byte 0</strong> via <code>axiom.passport</code> (with network-stripped sandbox mode), and sanitizes legacy HTML in pure Axiom with zero JS executed.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-capsule-browser">Run Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-capsule-browser/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-capsule-browser" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Axiom-UI Core Gallery -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-ui">
+              <img src="/previews/axiom-ui.png" alt="Axiom-UI interactive component gallery screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">15.34 KB Wasm</span>
+                <span class="badge-dark">5.38 KB Gzip</span>
+                <span class="badge-dark">0.20 ms Layout</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom-UI v1.0 — Core Engine &amp; Widget Gallery</h3>
+              <p>Unified 1-Draw-Call SDF &amp; HiDPI 3-style Font Atlas engine: native GPU keyboard text input, tactile SDF switches, sliders, real-time anti-aliased vector waveform, Z3 layout proof inspector, 3 live themes, and 120-frame UI Time-Travel.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-ui">Run Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-ui/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-ui" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1 SHOWCASE: TRUE-3D GPU GAMES & COMPILER INSPECTOR -->
+    <section id="stage1-games" class="section">
+      <div class="container">
+        <div class="section-hdr">
+          <h2>Stage 1 Live Showcase: True-3D Hardware GPU Games &amp; Taint Inspector</h2>
+          <p>Three complete browser games featuring procedural <code>256&times;256</code> bump-mapped textures, real-time lighting, Web Audio synthesis, and deterministic physics — written <strong>100% in Axiom</strong> with zero game engine and zero <code>rustc</code>:</p>
+        </div>
+
+        <div class="showcase-grid">
+          <!-- Slipgate -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-slipgate">
+              <img src="/previews/axiom-slipgate.png" alt="Axiom Slipgate 3D shooter screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">30.38 KB Wasm</span>
+                <span class="badge-dark">11.66 KB Gzip</span>
+                <span class="badge-dark">WebGL2 3D FPS</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Slipgate v2.0 GPU HD</h3>
+              <p>Quake-inspired true-3D polygonal citadel shooter with procedural bump-mapped stonework, multi-tier walkable terraces (<code>Space</code> jump), exact 3D ray-box pillar cover, sculpted 3D Shambler/Knight/Grunt enemies, and cylindrical Super-Shotgun.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-slipgate">Play Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-slipgate/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-slipgate" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Lion Herd -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-lion-herd">
+              <img src="/previews/axiom-lion-herd.png" alt="Axiom Lion Herd 3D savanna game screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">17.87 KB Wasm</span>
+                <span class="badge-dark">7.24 KB Gzip</span>
+                <span class="badge-dark">10,284 3D Tris</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Lion Herd v3.0 GPU HD</h3>
+              <p>True-3D sculpted savanna plateau with 8 procedural bump-mapped materials, 14 autonomous Merino sheep with flocking physics, sculpted 3D maned lion, golden roar shockwave ring, acacia trees, and real-time directional sun shadows.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-lion-herd">Play Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-lion-herd/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-lion-herd" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Color Lines -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="axiom-color-lines">
+              <img src="/previews/axiom-color-lines.png" alt="Axiom Color Lines 98 3D refractive glass puzzle screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">15.32 KB Wasm</span>
+                <span class="badge-dark">5.82 KB Gzip</span>
+                <span class="badge-dark">3D Refraction</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Color Lines 98 v3.0 GPU HD</h3>
+              <p>Carved Nero Marquina &amp; Crema Marfil marble board with 3D refractive glass jewel spheres, colored floor caustics, animated parabolic 3D BFS hop trajectories with synthesized audio clicks, and turn-by-turn Time-Travel.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-color-lines">Play Live Inline</button>
+                <a class="btn btn-sm" href="/axiom-color-lines/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-color-lines" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+
+          <!-- Compiler Payment & Taint Demo -->
+          <article class="demo-card">
+            <div class="demo-thumb-wrap" data-launch-demo="compiler-demo">
+              <img src="/previews/compiler-demo.png" alt="Axiom compiler Secret<T> payment inspector screenshot" loading="lazy">
+              <div class="demo-badges">
+                <span class="badge-dark">32.30 KB Wasm</span>
+                <span class="badge-dark">Z3 8/8 Proved</span>
+                <span class="badge-dark">Secret&lt;T&gt; Guard</span>
+              </div>
+            </div>
+            <div class="demo-body">
+              <h3>Axiom Compiler &amp; Taint Flight Recorder</h3>
+              <p>Interactive showcase of <code>Axiom.Flux</code> semantic deduplication (two AI agents writing differently named functions converge to identical hash <code>#3fca26293539</code>), <code>Secret&lt;str&gt;</code> redaction, and Time-Travel replay.</p>
+              <div class="demo-actions">
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="compiler-demo">Open Inspector</button>
+                <a class="btn btn-sm" href="/compiler-demo/" target="_blank" rel="noopener">Fullscreen</a>
+                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener">GitHub Repo</a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- BENCHMARKS TABLE -->
+    <section id="benchmarks" class="section">
+      <div class="container">
+        <div class="section-hdr">
+          <h2>Measured Engineering Benchmarks</h2>
+          <p>Side-by-side comparison between conventional Electron / Chromium + Virtual-DOM stacks and verified Axiom binaries running in production today:</p>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="bench-caption" class="table-wrapper">
+          <table class="bench-table">
+            <caption id="bench-caption">Production metrics measured across Axiom v0.2 and Axiom-UI v1.0 artifacts</caption>
+            <thead>
+              <tr>
+                <th scope="col">Dimension</th>
+                <th scope="col">Legacy Electron / DOM + JS</th>
+                <th scope="col">Axiom v0.2 + Axiom-UI v1.0</th>
+                <th scope="col">Measured Gain</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Desktop / UI App Payload</th>
+                <td>180 MB – 300 MB bundle</td>
+                <td class="bench-win">15.34 KB – 21.65 KB Wasm (5–8 KB gzip)</td>
+                <td class="bench-win">&gt; 10,000&times; smaller</td>
+              </tr>
+              <tr>
+                <th scope="row">Runtime Memory Footprint</th>
+                <td>450 MB – 950 MB (V8 + Blink DOM)</td>
+                <td class="bench-win">8.00 MiB deterministic Strata slab</td>
+                <td class="bench-win">-98.7% RAM</td>
+              </tr>
+              <tr>
+                <th scope="row">1,000,000-Cell Grid Layout</th>
+                <td>DOM thrashing / multi-frame GC stalls</td>
+                <td class="bench-win">0.50 ms single-pass virtualized GPU emit</td>
+                <td class="bench-win">Zero DOM nodes</td>
+              </tr>
+              <tr>
+                <th scope="row">GPU Compositing Calls</th>
+                <td>Dozens of layer passes &amp; CSS reflows</td>
+                <td class="bench-win">1 gl.drawArraysInstanced call / frame</td>
+                <td class="bench-win">60–120 FPS locked</td>
+              </tr>
+              <tr>
+                <th scope="row">AI Placeholder Stub Defense</th>
+                <td>Compiles silently if types match</td>
+                <td class="bench-win">Compile-time Z3 SMT proof obligation</td>
+                <td class="bench-win">Counterexample in ms</td>
+              </tr>
+              <tr>
+                <th scope="row">Supply-Chain Security</th>
+                <td>Ambient filesystem &amp; network access</td>
+                <td class="bench-win">Embedded axiom.passport + Secret&lt;T&gt; pipes</td>
+                <td class="bench-win">Halted before byte 0</td>
+              </tr>
+              <tr>
+                <th scope="row">Native Linux Executable</th>
+                <td>Multi-megabyte toolchain + libc</td>
+                <td class="bench-win">1.45 KB direct x86_64 ELF64 (zero rustc)</td>
+                <td class="bench-win">2.97 ms codegen</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7-STAGE ROADMAP -->
+    <section id="roadmap" class="section">
+      <div class="container">
+        <div class="section-hdr">
+          <h2>The 7-Stage Axiom Master Roadmap</h2>
+          <p>Axiom is engineered step-by-step toward a complete self-hosted, mathematically verified computing stack:</p>
+        </div>
+
+        <div class="roadmap-list">
+          <div class="stage-item" data-state="done">
+            <div class="stage-top"><span>Stage 1 — axiom-lang</span><span class="pill">COMPLETED</span></div>
+            <p>Content-addressed <code>Flux</code> graph, Z3 <code>Telos</code> contract prover, <code>Secret&lt;T&gt;</code> taint checker, and direct zero-<code>rustc</code> <code>Strata</code> Wasm &amp; Linux <code>x86_64</code> ELF64 compilers + 3 true-3D WebGL2 games.</p>
+          </div>
+
+          <div class="stage-item" data-state="done">
+            <div class="stage-top"><span>Stage 2 — axiom-ui</span><span class="pill">COMPLETED</span></div>
+            <p>Zero-DOM, Zero-CSS 1-Draw-Call WebGL2 SDF &amp; HiDPI Font Atlas UI engine powering <code>axiom-grid</code> (1M cells), <code>axiom-workspace</code> (4-window Desktop OS), and <code>axiom-capsule-browser</code>.</p>
+          </div>
+
+          <div class="stage-item" data-state="next">
+            <div class="stage-top"><span>Stages 3 &amp; 4 — axiom-studio (+ shell)</span><span class="pill">NEXT UP</span></div>
+            <p>Ultra-lightweight native AI-agent IDE built on <code>axiom-ui</code> with integrated natural-language command shell, Cyrillic/UTF-8 GPU typography, live Z3 &amp; Passport inspector, and multi-model Gemini 4 agent loop.</p>
+          </div>
+
+          <div class="stage-item">
+            <div class="stage-top"><span>Stage 5 — axiom-web</span><span class="pill">PROTOTYPE LIVE</span></div>
+            <p>Standalone capability-gated <code>.axw</code> capsule player combined with zero-JS Legacy HTML Clean-Reader (prototype live today in <code>axiom-capsule-browser</code>).</p>
+          </div>
+
+          <div class="stage-item">
+            <div class="stage-top"><span>Stage 6 — axiom-zero</span><span class="pill">PLANNED</span></div>
+            <p>Full compiler, canonicalizer, and verifier self-hosting directly on <code>Axiom.Strata</code>.</p>
+          </div>
+
+          <div class="stage-item">
+            <div class="stage-top"><span>Stage 7 — axiom-os</span><span class="pill">PLANNED</span></div>
+            <p>Bootable minimal live-USB capability operating system running verified Axiom capsules directly on hardware.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>Axiom Programming Stack (axiom-lang.org)</strong><br>
+        Copyright &copy; 2026 Yehuda Aminadav. All clean-room original IP licensed under <a href="https://github.com/aminadav-ai/axiom-lang/blob/main/LICENSE" target="_blank" rel="noopener">BUSL-1.1</a> (free for personal, academic &amp; non-commercial research use; Commercial Licenses available).
+      </div>
+      <div>
+        <a href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener">axiom-lang</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-ui" target="_blank" rel="noopener">axiom-ui</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-grid" target="_blank" rel="noopener">axiom-grid</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-workspace" target="_blank" rel="noopener">axiom-workspace</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-capsule-browser" target="_blank" rel="noopener">axiom-capsule-browser</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-slipgate" target="_blank" rel="noopener">axiom-slipgate</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Inline Demo Launcher Modal (<dialog closedby="any">) -->
+  <dialog id="demo-modal" closedby="any" aria-labelledby="modal-title">
+    <div class="modal-bar">
+      <div class="modal-title-group">
+        <h2 id="modal-title">Axiom Live Demo</h2>
+        <span id="modal-size" class="pill">Wasm</span>
+      </div>
+      <div class="header-actions">
+        <a id="modal-repo" class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener">View Source on GitHub</a>
+        <a id="modal-fullscreen" class="btn btn-sm btn-emerald" href="/" target="_blank" rel="noopener">Open Fullscreen</a>
+        <button id="modal-close" type="button" class="btn btn-sm">Close [Esc]</button>
+      </div>
+    </div>
+    <iframe id="modal-iframe" class="modal-frame" title="Interactive Axiom WebAssembly Demo" src="about:blank" allow="fullscreen"></iframe>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

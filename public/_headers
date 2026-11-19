@@ -1,0 +1,12 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: camera=(), geolocation=(), microphone=(), focus-without-user-activation=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Strict-Transport-Security: max-age=300; includeSubDomains
+  Content-Security-Policy: frame-ancestors 'self'; object-src 'none'; base-uri 'self';
+
+/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=3600

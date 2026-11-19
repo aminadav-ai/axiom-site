@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Axiom-UI v1.0 — Zero-DOM, Zero-CSS, Zero-Electron Hardware GPU UI Engine</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <canvas id="ui-canvas" aria-label="Axiom-UI Zero-DOM Hardware GPU Interactive Component Gallery"></canvas>
+  <div id="fallback-msg" class="fallback" hidden></div>
+  <script type="module">
+    import { mountAxiomUiApp } from './gpu_ui.js';
+    mountAxiomUiApp({
+      canvas: document.getElementById('ui-canvas'),
+      wasmUrl: './axiom_ui.wasm',
+      fallbackEl: document.getElementById('fallback-msg'),
+    });
+  </script>
+</body>
+</html>
