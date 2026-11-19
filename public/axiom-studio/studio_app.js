@@ -140,9 +140,21 @@ document.querySelectorAll('[data-tab]').forEach((btn) => {
   btn.addEventListener('click', () => switchCenterTab(btn.getAttribute('data-tab')));
 });
 
-// 4. Gemini Model Selector
+// 4. Gemini Model Selector & "+ New Chat" Button
 modelSelect.addEventListener('change', () => {
   chatModeTitle.textContent = `Агент: ${modelSelect.value}`;
+});
+
+document.getElementById('btn-new-chat')?.addEventListener('click', () => {
+  chatHistory = [];
+  importedSessionId = null;
+  chatFeed.textContent = '';
+  sessionPill.textContent = 'Новый чат';
+  appendChatMsg(
+    'assistant',
+    'Начат чистый диалог (старая история сброшена — максимальная экономия входных токенов!). Напишите задачу для проекта.',
+    'Готово'
+  );
 });
 
 // 5. Load Projects & Files
@@ -282,7 +294,7 @@ async function importSessionById(sessionId) {
   if (!d.ok) return;
 
   importedSessionId = d.id;
-  sessionPill.textContent = `AGY #${d.id.slice(0, 8)}`;
+  sessionPill.textContent = `Antigravity #${d.id.slice(0, 8)}`;
   planEditor.value = d.implementation_plan || '';
   taskEditor.value = d.task_md || '';
 
@@ -292,7 +304,7 @@ async function importSessionById(sessionId) {
     const toolsTxt = Array.isArray(m.tools) && m.tools.length ? ` [${m.tools.join(', ')}]` : '';
     const text = m.content || `(Вызов инструментов:${toolsTxt})`;
     chatHistory.push({ role: m.role, content: text });
-    appendChatMsg(m.role, text, `Импорт AGY${toolsTxt}`);
+    appendChatMsg(m.role, text, `История Antigravity${toolsTxt}`);
   }
 
   appendChatMsg(
@@ -301,6 +313,18 @@ async function importSessionById(sessionId) {
     'Готово к работе'
   );
 }
+
+document.getElementById('btn-new-chat')?.addEventListener('click', () => {
+  chatFeed.textContent = '';
+  chatHistory = [];
+  importedSessionId = '';
+  sessionPill.textContent = 'Новый чат';
+  appendChatMsg(
+    'assistant',
+    'Начат новый чистый диалог (история очищена для экономии токенов Gemini 4 API). Напишите вашу задачу по-русски — агент сам найдёт нужные файлы во всех репозиториях ~/Projects!',
+    'Чистая сессия'
+  );
+});
 
 document.getElementById('btn-open-import').addEventListener('click', async () => {
   const listEl = document.getElementById('session-list');
@@ -554,11 +578,11 @@ async function bootStudio() {
     codeEditor.value = DEMO_CODE;
     appendChatMsg(
       'assistant',
-      'Добро пожаловать в Axiom Studio v1.0!\n' +
-        '• Слева — проводник всех репозиториев Axiom.\n' +
+      'Добро пожаловать в Axiom Studio v1.4!\n' +
+        '• Слева — проводник всех репозиториев экосистемы Axiom.\n' +
         '• В центре — аппаратный WebGL2 граф семантических узлов #hash с поддержкой русской кириллицы и символа ₪ в 1 GPU Draw Call.\n' +
-        '• Сверху — гибридный переключатель: 1) Google One Ultra (0 ₪), 2) Gemini 4 Carbon API со счётчиком шекелей из бюджета 80 ₪, 3) Ollama Offline.',
-      'Гибридная ИИ-Студия'
+        '• Сверху — автономный агент Gemini 4 API со счётчиком шекелей и кнопкой «История Antigravity» для переноса контекста.',
+      'Автономная ИИ-Студия'
     );
   }
 
