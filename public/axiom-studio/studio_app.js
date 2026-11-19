@@ -40,7 +40,7 @@ let isLocalDaemon = false;
 let projects = [];
 let currentProject = null;
 let currentFilePath = '';
-let aiMode = 'ultra'; // 'ultra' | 'gemini' | 'ollama'
+const aiMode = 'gemini';
 let spentAgorotTotal = 0;
 let chatHistory = [];
 let importedSessionId = null;
@@ -140,28 +140,9 @@ document.querySelectorAll('[data-tab]').forEach((btn) => {
   btn.addEventListener('click', () => switchCenterTab(btn.getAttribute('data-tab')));
 });
 
-// 4. Hybrid AI Mode Switcher (`ultra` | `gemini` | `ollama`)
-document.querySelectorAll('[data-ai-mode]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    aiMode = btn.getAttribute('data-ai-mode');
-    document.querySelectorAll('[data-ai-mode]').forEach((b) => {
-      b.setAttribute('aria-pressed', String(b === btn));
-    });
-    if (aiMode === 'ultra') {
-      chatModeTitle.textContent = 'Чат: Google One Ultra Bridge (0 ₪)';
-    } else if (aiMode === 'gemini') {
-      chatModeTitle.textContent = `Чат: Автономный агент (${modelSelect.value})`;
-    } else {
-      chatModeTitle.textContent = 'Чат: Локальная модель Ollama (0 ₪)';
-    }
-    updateBudgetUi();
-  });
-});
-
+// 4. Gemini Model Selector
 modelSelect.addEventListener('change', () => {
-  if (aiMode === 'gemini') {
-    chatModeTitle.textContent = `Чат: Автономный агент (${modelSelect.value})`;
-  }
+  chatModeTitle.textContent = `Агент: ${modelSelect.value}`;
 });
 
 // 5. Load Projects & Files
@@ -437,18 +418,6 @@ document.querySelectorAll('[data-quick-cmd]').forEach((btn) => {
   btn.addEventListener('click', () => runShellCommand(btn.getAttribute('data-quick-cmd')));
 });
 
-document.getElementById('btn-copy-agy').addEventListener('click', async () => {
-  const cwd = currentProject ? currentProject.path : '/home/aminadav/Projects/axiom-studio';
-  const snippet = `cd "${cwd}" && agy`;
-  try {
-    await navigator.clipboard.writeText(snippet);
-  } catch {}
-  shellOutput.textContent =
-    `=== БЕСПЛАТНЫЙ РЕЖИМ GOOGLE ONE AI ULTRA (0 ₪) ===\n` +
-    `Команда скопирована в буфер обмена:\n  ${snippet}\n\n` +
-    `Официальный клиент Google Antigravity CLI (agy) и приложение Antigravity легально используют вашу подписку Google One Ultra без расхода API-баланса, а Axiom Studio синхронизирует граф, Z3 и русские артефакты на диске!`;
-});
-
 // 9. Hybrid Chat Submission
 async function submitChat() {
   const prompt = chatInput.value.trim();
@@ -500,11 +469,18 @@ async function submitChat() {
 
     let tracePrefix = '';
     if (Array.isArray(d.tool_trace) && d.tool_trace.length > 0) {
-      tracePrefix = `[Инструменты: ${d.tool_trace.map((t) => t.tool).join(' -> ')}]\n\n`;
+      tracePrefix = `[Инструменты (${d.tool_trace.length}): ${d.tool_trace.map((t) => t.tool).join(' -> ')}]\n\n`;
     }
-    const fullReply = `${tracePrefix}${d.reply || '(пустой ответ)'}`;
+    const fullReply = `${tracePrefix}${d.reply || '(готово)'}`;
     appendChatMsg('assistant', fullReply, tokInfo);
     chatHistory.push({ role: 'assistant', content: d.reply || '' });
+
+    // Hot-reload Studio CSS immediately if the agent edited Axiom Studio's own styles!
+    if (d.reload_studio_ui) {
+      const linkEl = document.getElementById('studio-stylesheet');
+      if (linkEl) linkEl.href = `./styles.css?v=${Date.now()}`;
+      appendChatMsg('assistant', 'Стили Axiom Studio обновлены на лету! (Для перезагрузки JS-скриптов нажмите F5 / Ctrl+R).', 'Live Hot-Reload');
+    }
   } finally {
     sendBtn.disabled = false;
     sendBtn.textContent = 'Отправить';
@@ -523,7 +499,23 @@ chatInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Theme Toggle
+// Theme Toggle & Live Font Scale Controls (A- / 112% / A+)
+let uiScale = Number(localStorage.getItem('axiom_studio_font_scale')) || 1.12;
+const fontResetBtn = document.getElementById('btn-font-reset');
+
+function applyUiScale(next) {
+  uiScale = Math.min(1.65, Math.max(0.85, Math.round(next * 100) / 100));
+  document.body.style.setProperty('--ui-scale', String(uiScale));
+  localStorage.setItem('axiom_studio_font_scale', String(uiScale));
+  if (fontResetBtn) fontResetBtn.textContent = `${Math.round(uiScale * 100)}%`;
+}
+
+applyUiScale(uiScale);
+
+document.getElementById('btn-font-dec')?.addEventListener('click', () => applyUiScale(uiScale - 0.08));
+document.getElementById('btn-font-inc')?.addEventListener('click', () => applyUiScale(uiScale + 0.08));
+fontResetBtn?.addEventListener('click', () => applyUiScale(1.12));
+
 document.getElementById('btn-theme').addEventListener('click', () => {
   const root = document.documentElement;
   const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';

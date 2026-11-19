@@ -10,7 +10,7 @@
   --text-light: #0f172a;
   --text-dark: #eef4ff;
   --muted-light: #475569;
-  --muted-dark: #94a8c9;
+  --muted-dark: #a2b6d6;
   --accent-light: #1d4ed8;
   --accent-dark: #5298ff;
   --emerald-light: #059669;
@@ -73,7 +73,13 @@ html[data-theme="light"] {
   box-sizing: border-box;
 }
 
-html, body {
+/* Do NOT set font-size on html or :root so OS accessibility text-scale works natively */
+html {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+body {
   margin: 0;
   padding: 0;
   inline-size: 100%;
@@ -82,7 +88,8 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
-  font-size: 13.5px;
+  font-size: calc(1rem * var(--ui-scale, 1.12));
+  line-height: 1.55;
 }
 
 pre, code, textarea.code-area, .mono {
@@ -91,7 +98,7 @@ pre, code, textarea.code-area, .mono {
 
 .studio-shell {
   display: grid;
-  grid-template-rows: 3.25rem 1fr;
+  grid-template-rows: auto 1fr;
   block-size: 100dvh;
   inline-size: 100dvw;
 }
@@ -102,22 +109,23 @@ pre, code, textarea.code-area, .mono {
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
-  padding-inline: 0.9rem;
+  padding: 0.45rem 0.9rem;
+  min-block-size: 3.5rem;
   background: var(--surface);
   border-block-end: 1px solid var(--border);
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 .topbar-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .brand-title {
   font-weight: 800;
-  font-size: 0.98rem;
+  font-size: 1.05em;
   letter-spacing: -0.02em;
   display: inline-flex;
   align-items: center;
@@ -125,17 +133,17 @@ pre, code, textarea.code-area, .mono {
 }
 
 .dot-live {
-  inline-size: 0.6rem;
-  block-size: 0.6rem;
+  inline-size: 0.65rem;
+  block-size: 0.65rem;
   border-radius: 999px;
   background: var(--emerald);
   box-shadow: 0 0 8px var(--emerald);
 }
 
 .badge {
-  font-size: 0.74rem;
+  font-size: 0.85em;
   font-weight: 700;
-  padding: 0.2rem 0.55rem;
+  padding: 0.22em 0.65em;
   border-radius: 999px;
   background: var(--surface-alt);
   border: 1px solid var(--border);
@@ -149,13 +157,13 @@ pre, code, textarea.code-area, .mono {
 
 /* Controls */
 .btn, select.ctrl-select, input.ctrl-input {
-  padding: 0.35rem 0.68rem;
+  padding: 0.36em 0.72em;
   border-radius: 0.45rem;
   border: 1px solid var(--border);
   background: var(--surface-alt);
   color: var(--text);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.88em;
+  font-weight: 650;
 }
 
 .btn {
@@ -181,19 +189,19 @@ pre, code, textarea.code-area, .mono {
 .mode-seg {
   display: inline-flex;
   background: var(--bg);
-  padding: 0.16rem;
+  padding: 0.18rem;
   border-radius: 0.5rem;
   border: 1px solid var(--border);
-  gap: 0.15rem;
+  gap: 0.16rem;
 }
 
 .mode-seg button {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 0.28rem 0.6rem;
+  padding: 0.32em 0.68em;
   border-radius: 0.38rem;
-  font-size: 0.77rem;
+  font-size: 0.86em;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -207,7 +215,7 @@ pre, code, textarea.code-area, .mono {
 /* Main 3-Column Grid */
 .workspace-grid {
   display: grid;
-  grid-template-columns: 15.5rem 1fr 24.5rem;
+  grid-template-columns: 16.5rem 1fr 27rem;
   min-block-size: 0;
   overflow: hidden;
 }
@@ -222,12 +230,11 @@ pre, code, textarea.code-area, .mono {
 }
 
 .pane-hdr {
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 0.8rem;
   border-block-end: 1px solid var(--border);
   font-weight: 750;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.85em;
+  letter-spacing: 0.03em;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -238,16 +245,16 @@ pre, code, textarea.code-area, .mono {
 .file-list {
   flex: 1;
   overflow-y: auto;
-  padding: 0.4rem;
+  padding: 0.45rem;
   list-style: none;
   margin: 0;
 }
 
 .file-item {
-  padding: 0.34rem 0.55rem;
-  border-radius: 0.38rem;
+  padding: 0.42em 0.6em;
+  border-radius: 0.4rem;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.92em;
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -260,15 +267,15 @@ pre, code, textarea.code-area, .mono {
 }
 
 .file-item[aria-selected="true"] {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--accent);
   font-weight: 700;
 }
 
-/* Center Split (Top: GPU Graph / Code / Artifacts; Bottom: Axiom-Shell + Z3) */
+/* Center Split */
 .pane-center {
   display: grid;
-  grid-template-rows: 1.35fr 0.85fr;
+  grid-template-rows: 1.3fr 0.9fr;
   min-block-size: 0;
   min-inline-size: 0;
   background: var(--bg);
@@ -285,7 +292,7 @@ pre, code, textarea.code-area, .mono {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.35rem 0.7rem;
+  padding: 0.4rem 0.75rem;
   background: var(--surface);
   border-block-end: 1px solid var(--border);
   gap: 0.5rem;
@@ -295,16 +302,17 @@ pre, code, textarea.code-area, .mono {
 .tab-buttons {
   display: flex;
   gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .tab-btn {
-  padding: 0.32rem 0.7rem;
+  padding: 0.36em 0.75em;
   border-radius: 0.4rem;
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.9em;
   cursor: pointer;
 }
 
@@ -337,11 +345,11 @@ textarea.code-area {
   inline-size: 100%;
   border: 0;
   resize: none;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.05rem;
   background: #090e1a;
-  color: #e2e8f0;
-  font-size: 0.83rem;
-  line-height: 1.55;
+  color: #eef4ff;
+  font-size: 0.96em;
+  line-height: 1.58;
   color-scheme: dark;
   accent-color: var(--accent);
 }
@@ -372,16 +380,16 @@ textarea.code-area:focus {
   flex-direction: column;
   min-block-size: 0;
   background: #070b14;
-  color: #dbeafe;
+  color: #e2e8f0;
 }
 
 .shell-log {
   flex: 1;
   margin: 0;
-  padding: 0.65rem 0.85rem;
+  padding: 0.7rem 0.9rem;
   overflow-y: auto;
-  font-size: 0.79rem;
-  line-height: 1.48;
+  font-size: 0.92em;
+  line-height: 1.52;
   white-space: pre-wrap;
   color-scheme: dark;
   accent-color: var(--accent);
@@ -390,7 +398,7 @@ textarea.code-area:focus {
 .shell-bar {
   display: flex;
   gap: 0.45rem;
-  padding: 0.4rem 0.65rem;
+  padding: 0.45rem 0.7rem;
   background: #0d1424;
   border-block-start: 1px solid #1e2d4a;
   align-items: center;
@@ -402,9 +410,9 @@ textarea.code-area:focus {
   color: #eef4ff;
   border: 1px solid #263859;
   border-radius: 0.4rem;
-  padding: 0.36rem 0.6rem;
+  padding: 0.42em 0.65em;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 0.8rem;
+  font-size: 0.94em;
 }
 
 /* Right Chat Pane */
@@ -419,58 +427,60 @@ textarea.code-area:focus {
 .chat-feed {
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem;
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 
 .msg {
-  padding: 0.65rem 0.8rem;
-  border-radius: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.7rem;
   border: 1px solid var(--border);
   background: var(--bg);
-  font-size: 0.84rem;
-  line-height: 1.5;
+  font-size: 0.98em;
+  line-height: 1.56;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .msg-user {
-  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg));
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
 }
 
 .msg-meta {
-  font-size: 0.71rem;
+  font-size: 0.8em;
   font-weight: 700;
   color: var(--muted);
-  margin-block-end: 0.3rem;
+  margin-block-end: 0.35rem;
   display: flex;
   justify-content: space-between;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .chat-composer {
-  padding: 0.6rem;
+  padding: 0.65rem;
   border-block-start: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .chat-composer textarea {
   inline-size: 100%;
-  min-block-size: 4.4rem;
-  max-block-size: 9rem;
+  min-block-size: 4.8rem;
+  max-block-size: 10rem;
   resize: vertical;
   border-radius: 0.5rem;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  padding: 0.55rem 0.65rem;
+  padding: 0.6rem 0.75rem;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.98em;
+  line-height: 1.5;
 }
 
 .composer-actions {
@@ -478,16 +488,17 @@ textarea.code-area:focus {
   justify-content: space-between;
   align-items: center;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 /* Modals (<dialog closedby="any">) */
 dialog.studio-dialog {
-  inline-size: min(92dvw, 38rem);
+  inline-size: min(92dvw, 40rem);
   border: 1px solid var(--border);
   border-radius: 0.85rem;
   background: var(--surface);
   color: var(--text);
-  padding: 1.2rem;
+  padding: 1.25rem;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
 }
 
@@ -500,15 +511,15 @@ dialog.studio-dialog::backdrop {
   list-style: none;
   padding: 0;
   margin: 0.8rem 0;
-  max-block-size: 20rem;
+  max-block-size: 22rem;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .session-card {
-  padding: 0.65rem 0.8rem;
+  padding: 0.7rem 0.85rem;
   border-radius: 0.55rem;
   border: 1px solid var(--border);
   background: var(--bg);

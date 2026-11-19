@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="text-scale" content="scale">
   <meta name="color-scheme" content="light dark">
-  <title>Axiom Studio v1.0 — Гибридная ИИ-Среда Разработки (Ultra / Gemini 4 / Ollama)</title>
-  <link rel="stylesheet" href="./styles.css">
+  <title>Axiom Studio v1.3 — Автономная ИИ-Среда Разработки (Gemini 4 API)</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link id="studio-stylesheet" rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div class="studio-shell">
@@ -19,15 +21,9 @@
         <span id="daemon-badge" class="badge">Проверка демона...</span>
       </div>
 
-      <!-- 3-Mode Hybrid AI Selector -->
+      <!-- Gemini 4 Model Selector -->
       <div class="topbar-group">
-        <div class="mode-seg" role="group" aria-label="Гибридный режим ИИ">
-          <button type="button" data-ai-mode="ultra" aria-pressed="true">1. Google One Ultra (0 ₪)</button>
-          <button type="button" data-ai-mode="gemini" aria-pressed="false">2. Gemini 4 API</button>
-          <button type="button" data-ai-mode="ollama" aria-pressed="false">3. Ollama Offline (0 ₪)</button>
-        </div>
-
-        <select id="model-select" class="ctrl-select" aria-label="Модель ИИ">
+        <select id="model-select" class="ctrl-select" aria-label="Модель Gemini API">
           <option value="gemini-4-carbon">gemini-4-carbon ($2/$10, кэш $0.10)</option>
           <option value="gemini-4-argon">gemini-4-argon ($2/$10, кэш $0.10)</option>
           <option value="gemini-4-hydrogen">gemini-4-hydrogen ($1.5/$7.5)</option>
@@ -40,7 +36,12 @@
 
       <div class="topbar-group">
         <span id="budget-badge" class="badge badge-budget mono">Бюджет: 80.00 ₪ | Расход: 0.00 ₪</span>
-        <button id="btn-open-import" type="button" class="btn btn-emerald">Импорт из Antigravity</button>
+        <div class="mode-seg" role="group" aria-label="Масштаб шрифта">
+          <button id="btn-font-dec" type="button" title="Уменьшить шрифт">A-</button>
+          <button id="btn-font-reset" type="button" title="Масштаб шрифта">112%</button>
+          <button id="btn-font-inc" type="button" title="Увеличить шрифт">A+</button>
+        </div>
+        <button id="btn-open-import" type="button" class="btn btn-emerald">Импорт AGY</button>
         <button id="btn-open-key" type="button" class="btn">Ключ API</button>
         <button id="btn-theme" type="button" class="btn">Тема</button>
       </div>
@@ -105,7 +106,6 @@
             <div class="topbar-group">
               <button type="button" class="btn" data-quick-cmd="git status -s">git status</button>
               <button type="button" class="btn" data-quick-cmd="ls -lh logs/ | tail -n 5">Логи</button>
-              <button id="btn-copy-agy" type="button" class="btn btn-emerald" title="Скопировать команду запуска официального клиента agy по подписке Google One Ultra">Команда agy (Ultra 0 ₪)</button>
             </div>
           </div>
           <pre id="shell-output" class="shell-log">Axiom Studio v1.0 готова. Нажмите «Импорт из Antigravity», чтобы подтянуть всю историю нашей беседы и планы!</pre>
@@ -118,10 +118,10 @@
       </main>
 
       <!-- RIGHT: Hybrid Multi-Brain AI Chat -->
-      <aside class="pane-right" aria-label="Гибридный чат с ИИ-агентом">
+      <aside class="pane-right" aria-label="Чат с ИИ-агентом">
         <div class="pane-hdr">
-          <span id="chat-mode-title">Чат: Google One Ultra Bridge (0 ₪)</span>
-          <span id="session-pill" class="mono" style="font-size: 0.7rem;">Локально</span>
+          <span id="chat-mode-title">Агент: gemini-4-carbon</span>
+          <span id="session-pill" class="mono" style="font-size: 0.8em;">Локально</span>
         </div>
         <div id="chat-feed" class="chat-feed"></div>
         <form id="chat-form" class="chat-composer">
