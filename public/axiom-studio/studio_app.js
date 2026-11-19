@@ -34,8 +34,18 @@ const btnScrollBottom = document.getElementById('btn-scroll-bottom');
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const btnSendChat = document.getElementById('btn-send-chat');
+const btnStopChat = document.getElementById('btn-stop-chat');
+let activeChatAbort = null;
+let activeStatusTimer = null;
+const btnAttachImage = document.getElementById('btn-attach-image');
+const chatImageInput = document.getElementById('chat-image-input');
+const composerAttachments = document.getElementById('composer-attachments');
 const modelSelect = document.getElementById('model-select');
 const costInlinePill = document.getElementById('cost-inline-pill');
+
+const dialogImagePreview = document.getElementById('dialog-image-preview');
+const imagePreviewFull = document.getElementById('image-preview-full');
+const imagePreviewTitle = document.getElementById('image-preview-title');
 
 const inspectorDrawer = document.getElementById('inspector-drawer');
 const btnDrawerArtifacts = document.getElementById('btn-drawer-artifacts');
@@ -63,6 +73,7 @@ let collapsedProjects = new Set();
 let activeProjectName = 'axiom-studio';
 let activeConv = null; // { id, project, title, updated_at, messages: [{role, content, meta}], plan_md, task_md }
 let currentFilePath = '';
+let pendingImages = []; // [{ mime_type, data, name }]
 let spentIlsTotal = Number(localStorage.getItem('axiom_studio_spent_ils') || '0');
 let gpuBooted = false;
 let wasmExports = null;
@@ -203,7 +214,14 @@ function renderEmptyWelcome() {
   chatFeed.appendChild(box);
 }
 
-function appendMessageEl(role, content, meta = '') {
+function openImagePreview(src, title = 'Изображение') {
+  if (!dialogImagePreview || !imagePreviewFull) return;
+  imagePreviewFull.src = src;
+  if (imagePreviewTitle) imagePreviewTitle.textContent = title || 'Изображение';
+  dialogImagePreview.showModal();
+}
+
+function appendMessageEl(role, content, meta = '', images = []) {
   const welcome = chatFeed.querySelector('.empty-welcome');
   if (welcome) welcome.remove();
 
@@ -212,8 +230,32 @@ function appendMessageEl(role, content, meta = '') {
 
   const bubble = document.createElement('div');
   bubble.className = 'msg-bubble';
+
+  if (Array.isArray(images) && images.length > 0) {
+    const imgGrid = document.createElement('div');
+    imgGrid.className = 'msg-images';
+    for (const img of images) {
+      if (!img || !img.data || !img.mime_type) continue;
+      const dataUrl = `data:${img.mime_type};base64,${img.data}`;
+      const thumb = document.createElement('img');
+      thumb.className = 'msg-image-thumb';
+      thumb.src = dataUrl;
+      thumb.alt = img.name || 'Прикреплённое изображение';
+      thumb.title = `${img.name || 'Изображение'} — нажмите для увеличения`;
+      thumb.addEventListener('click', () => openImagePreview(dataUrl, img.name || 'Изображение'));
+      imgGrid.appendChild(thumb);
+    }
+    if (imgGrid.childElementCount > 0) {
+      bubble.appendChild(imgGrid);
+    }
+  }
+
   if (role === 'user') {
-    bubble.textContent = content;
+    if (content) {
+      const textEl = document.createElement('div');
+      textEl.textContent = content;
+      bubble.appendChild(textEl);
+    }
   } else {
     renderMarkdownSafe(bubble, content);
   }
@@ -246,7 +288,7 @@ function renderActiveConversation() {
     renderEmptyWelcome();
   } else {
     for (const m of activeConv.messages) {
-      appendMessageEl(m.role, m.content, m.meta || '');
+      appendMessageEl(m.role, m.content, m.meta || '', m.images || []);
     }
   }
   syncProjectFilesSelect();
@@ -509,20 +551,224 @@ document.querySelectorAll('.drawer-tab').forEach((btn) => {
   btn.addEventListener('click', () => openDrawerTab(btn.dataset.tab));
 });
 
-// --- Chat Submission (IME-Safe Enter + Gemini 4 API) ---
+// --- Image Attachments (File Picker + Ctrl+V Paste + Drag & Drop) ---
+function readImageFileOptimized(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Не удалось прочитать изображение'));
+    reader.onload = () => {
+      const dataUrl = String(reader.result || '');
+      const commaIdx = dataUrl.indexOf(',');
+      if (commaIdx < 0) {
+        reject(new Error('Некорректный формат изображения'));
+        return;
+      }
+      const header = dataUrl.slice(0, commaIdx);
+      const mimeMatch = header.match(/data:([^;]+);base64/i);
+      const origMime = (mimeMatch && mimeMatch[1]) || file.type || 'image/png';
+      const origBase64 = dataUrl.slice(commaIdx + 1);
+      const name = file.name || `screenshot-${Date.now()}.png`;
+
+      // Preserve animated GIFs or already compact images directly
+      if (origMime === 'image/gif' || file.size <= 1_600_000) {
+        resolve({ mime_type: origMime, data: origBase64, name });
+        return;
+      }
+
+      const img = new Image();
+      img.onerror = () => resolve({ mime_type: origMime, data: origBase64, name });
+      img.onload = () => {
+        const maxSide = 2048;
+        let { width, height } = img;
+        if (width > maxSide || height > maxSide) {
+          const scale = maxSide / Math.max(width, height);
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve({ mime_type: origMime, data: origBase64, name });
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const outMime = 'image/jpeg';
+        const outUrl = canvas.toDataURL(outMime, 0.88);
+        const outBase64 = outUrl.slice(outUrl.indexOf(',') + 1);
+        resolve({ mime_type: outMime, data: outBase64, name });
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPendingAttachments() {
+  if (!composerAttachments) return;
+  composerAttachments.textContent = '';
+  if (pendingImages.length === 0) {
+    composerAttachments.hidden = true;
+    return;
+  }
+  composerAttachments.hidden = false;
+  pendingImages.forEach((img, idx) => {
+    const dataUrl = `data:${img.mime_type};base64,${img.data}`;
+    const chip = document.createElement('div');
+    chip.className = 'attachment-chip';
+
+    const thumb = document.createElement('img');
+    thumb.className = 'attachment-thumb';
+    thumb.src = dataUrl;
+    thumb.alt = img.name || 'Изображение';
+    thumb.title = `${img.name || 'Изображение'} — нажмите для просмотра`;
+    thumb.addEventListener('click', () => openImagePreview(dataUrl, img.name || 'Изображение'));
+
+    const rmBtn = document.createElement('button');
+    rmBtn.type = 'button';
+    rmBtn.className = 'attachment-remove';
+    rmBtn.textContent = '×';
+    rmBtn.title = 'Убрать изображение';
+    rmBtn.setAttribute('aria-label', 'Убрать изображение');
+    rmBtn.addEventListener('click', () => {
+      pendingImages.splice(idx, 1);
+      renderPendingAttachments();
+    });
+
+    chip.append(thumb, rmBtn);
+    composerAttachments.appendChild(chip);
+  });
+}
+
+async function addImageFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const maxImages = 8;
+  for (const file of Array.from(fileList)) {
+    if (pendingImages.length >= maxImages) break;
+    if (!file || !file.type || !file.type.startsWith('image/')) continue;
+    try {
+      const encoded = await readImageFileOptimized(file);
+      pendingImages.push(encoded);
+    } catch {
+      // Skip unreadable image file
+    }
+  }
+  renderPendingAttachments();
+}
+
+if (btnAttachImage && chatImageInput) {
+  btnAttachImage.addEventListener('click', () => {
+    chatImageInput.click();
+  });
+
+  chatImageInput.addEventListener('change', async () => {
+    await addImageFiles(chatImageInput.files);
+    chatImageInput.value = '';
+    chatInput.focus();
+  });
+}
+
+// Paste screenshot or copied image (Ctrl+V) anywhere while focused on chat
+document.addEventListener('paste', async (event) => {
+  const activeTag = document.activeElement?.tagName;
+  if (
+    document.activeElement === planEditor ||
+    document.activeElement === taskEditor ||
+    document.activeElement === codeEditor ||
+    (activeTag === 'INPUT' && document.activeElement !== chatImageInput)
+  ) {
+    return;
+  }
+  const dt = event.clipboardData;
+  if (!dt) return;
+  const imageFiles = [];
+  if (dt.items) {
+    for (const item of Array.from(dt.items)) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const f = item.getAsFile();
+        if (f) imageFiles.push(f);
+      }
+    }
+  } else if (dt.files) {
+    for (const f of Array.from(dt.files)) {
+      if (f.type.startsWith('image/')) imageFiles.push(f);
+    }
+  }
+  if (imageFiles.length > 0) {
+    const hasPlainText = Boolean(dt.getData && dt.getData('text/plain'));
+    if (!hasPlainText) {
+      event.preventDefault();
+    }
+    await addImageFiles(imageFiles);
+    chatInput.focus();
+  }
+});
+
+// Drag & Drop images onto composer or chat feed
+let dragDepth = 0;
+for (const dropZone of [chatForm, chatScrollWrap]) {
+  if (!dropZone) continue;
+  dropZone.addEventListener('dragenter', (e) => {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+    e.preventDefault();
+    dragDepth += 1;
+    chatForm.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragover', (e) => {
+    if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+  dropZone.addEventListener('dragleave', () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) chatForm.classList.remove('drag-over');
+  });
+  dropZone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    chatForm.classList.remove('drag-over');
+    if (e.dataTransfer?.files?.length) {
+      await addImageFiles(e.dataTransfer.files);
+      chatInput.focus();
+    }
+  });
+}
+
+// --- Chat Submission (IME-Safe Enter + Gemini 4 API + Multimodal Images) ---
 async function submitChat() {
   const prompt = chatInput.value.trim();
-  if (!prompt || btnSendChat.disabled) return;
+  if ((!prompt && pendingImages.length === 0) || btnSendChat.disabled) return;
   if (!activeConv) startNewConversation(activeProjectName);
+
+  const imagesToSend = pendingImages.map(({ mime_type, data, name }) => ({
+    mime_type,
+    data,
+    name,
+  }));
+  pendingImages = [];
+  renderPendingAttachments();
 
   chatInput.value = '';
   if (activeConv.messages.length === 0 || activeConv.title === 'Новый диалог') {
-    activeConv.title = prompt.length > 44 ? `${prompt.slice(0, 44)}…` : prompt;
+    const titleBase = prompt || imagesToSend[0]?.name || 'Изображение';
+    activeConv.title = titleBase.length > 44 ? `${titleBase.slice(0, 44)}…` : titleBase;
     crumbTitle.textContent = activeConv.title;
   }
 
-  activeConv.messages.push({ role: 'user', content: prompt, meta: '' });
-  appendMessageEl('user', prompt);
+  const historyForApi = activeConv.messages.slice(-16).map((m) => ({
+    role: m.role,
+    content: m.content,
+    images: Array.isArray(m.images) ? m.images : undefined,
+  }));
+
+  activeConv.messages.push({
+    role: 'user',
+    content: prompt,
+    images: imagesToSend.length > 0 ? imagesToSend : undefined,
+    meta: '',
+  });
+  appendMessageEl('user', prompt, '', imagesToSend);
   await saveActiveConversation();
 
   if (!isLocalDaemon) {
@@ -536,22 +782,41 @@ async function submitChat() {
   }
 
   btnSendChat.disabled = true;
-  const thinkingRow = appendMessageEl('assistant', 'Думаю и анализирую проект…', modelSelect.value);
+  btnSendChat.hidden = true;
+  if (btnStopChat) btnStopChat.hidden = false;
+
+  const startedAt = Date.now();
+  const thinkingRow = appendMessageEl('assistant', 'Запуск агента…', `${modelSelect.value} · 0 сек`);
+  const thinkingBubble = thinkingRow.querySelector('.msg-bubble');
+  const thinkingMeta = thinkingRow.querySelector('.msg-meta');
+
+  activeChatAbort = new AbortController();
+  let lastLiveStatus = 'Запрос к Gemini API…';
+  activeStatusTimer = setInterval(async () => {
+    const secs = Math.floor((Date.now() - startedAt) / 1000);
+    try {
+      const sr = await fetch('/api/chat/status', { cache: 'no-store' });
+      const sd = await sr.json();
+      if (sd.status) lastLiveStatus = sd.status;
+    } catch {
+      // ignore transient poll error
+    }
+    if (thinkingBubble) thinkingBubble.textContent = `${lastLiveStatus} (нажмите ■ справа внизу, чтобы прервать)`;
+    if (thinkingMeta) thinkingMeta.textContent = `${modelSelect.value} · ${secs} сек`;
+  }, 850);
 
   try {
     const proj = getProjectByName(activeConv.project);
-    const historyForApi = activeConv.messages.slice(-16).map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
 
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: activeChatAbort.signal,
       body: JSON.stringify({
         mode: 'gemini',
         model: modelSelect.value,
         prompt,
+        images: imagesToSend,
         project_path: proj.path || '',
         history: historyForApi,
       }),
@@ -580,12 +845,35 @@ async function submitChat() {
     }
   } catch (err) {
     thinkingRow.remove();
-    appendMessageEl('assistant', `Ошибка связи с локальным демоном: ${err}`, 'Ошибка');
+    if (err && err.name === 'AbortError') {
+      const stopMsg = 'Генерация прервана пользователем (запрос к Gemini API остановлен).';
+      activeConv.messages.push({ role: 'assistant', content: stopMsg, meta: 'Остановлено' });
+      appendMessageEl('assistant', stopMsg, 'Остановлено');
+      await saveActiveConversation();
+    } else {
+      appendMessageEl('assistant', `Ошибка связи с локальным демоном: ${err}`, 'Ошибка');
+    }
   } finally {
+    if (activeStatusTimer) {
+      clearInterval(activeStatusTimer);
+      activeStatusTimer = null;
+    }
+    activeChatAbort = null;
     btnSendChat.disabled = false;
+    btnSendChat.hidden = false;
+    if (btnStopChat) btnStopChat.hidden = true;
     chatInput.focus();
   }
 }
+
+btnStopChat?.addEventListener('click', () => {
+  if (isLocalDaemon) {
+    fetch('/api/chat/cancel', { method: 'POST' }).catch(() => {});
+  }
+  if (activeChatAbort) {
+    activeChatAbort.abort();
+  }
+});
 
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();

@@ -72,15 +72,24 @@
       <!-- BOTTOM FLOATING COMPOSER CARD -->
       <div class="composer-dock">
         <form id="chat-form" class="composer-card">
+          <div id="composer-attachments" class="composer-attachments" hidden></div>
+          <input id="chat-image-input" type="file" accept="image/*" multiple hidden>
           <label for="chat-input" class="visually-hidden">Сообщение для ИИ-агента</label>
           <textarea
             id="chat-input"
             class="composer-textarea"
-            placeholder="Спросите что угодно или поставьте задачу по-русски... (Enter — отправить, Shift+Enter — перенос)"
+            placeholder="Спросите что угодно или поставьте задачу... (Enter — отправить, Shift+Enter — перенос, Ctrl+V — вставить картинку)"
           ></textarea>
           <div class="composer-toolbar">
             <div class="composer-toolbar-left">
               <button id="btn-quick-new" type="button" class="composer-icon-btn" title="Начать новый чистый диалог (экономит токены)" aria-label="Новый диалог">+</button>
+              <button id="btn-attach-image" type="button" class="composer-icon-btn" title="Прикрепить картинку (или Ctrl+V / перетащить сюда)" aria-label="Прикрепить картинку">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+              </button>
               <label for="model-select" class="visually-hidden">Выбор модели Gemini</label>
               <select id="model-select" class="model-inline-select" title="Модель Gemini API">
                 <option value="gemini-4-carbon">Gemini 4 Carbon ($2/$10)</option>
@@ -94,6 +103,7 @@
             </div>
             <div class="composer-toolbar-right">
               <span id="cost-inline-pill" class="cost-inline-pill mono" title="Расход за текущую сессию">0.00 ₪</span>
+              <button id="btn-stop-chat" type="button" class="stop-circle-btn" hidden title="Остановить генерацию немедленно" aria-label="Остановить">■</button>
               <button id="btn-send-chat" type="submit" class="send-circle-btn" title="Отправить (Enter)" aria-label="Отправить">→</button>
             </div>
           </div>
@@ -242,6 +252,17 @@
       Выберите диалог из <code>~/.gemini/antigravity/brain/</code>, чтобы перенести сообщения и русские планы в текущий проект:
     </p>
     <ul id="session-list" class="session-list"></ul>
+  </dialog>
+
+  <!-- MODAL 3: Full-Size Image Lightbox -->
+  <dialog id="dialog-image-preview" class="studio-dialog image-preview-dialog" closedby="any" aria-label="Просмотр изображения">
+    <div class="dialog-hdr">
+      <h3 id="image-preview-title">Изображение</h3>
+      <button type="button" class="icon-btn" data-close-dialog="dialog-image-preview" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="image-preview-wrap">
+      <img id="image-preview-full" alt="Прикреплённое изображение">
+    </div>
   </dialog>
 
   <script type="module" src="./studio_app.js"></script>
