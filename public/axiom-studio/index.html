@@ -5,166 +5,243 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="text-scale" content="scale">
   <meta name="color-scheme" content="light dark">
-  <title>Axiom Studio v1.4 — Автономная ИИ-Среда Разработки (Gemini 4 API)</title>
+  <title>Axiom Studio v2.0 — Автономная ИИ-Среда Разработки</title>
   <link rel="icon" type="image/png" sizes="256x256" href="./icons/icon-256.png">
   <link rel="manifest" href="./manifest.webmanifest">
   <link id="studio-stylesheet" rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="studio-shell">
-    <!-- TOP BAR -->
-    <header class="topbar">
-      <div class="topbar-group">
-        <span class="brand-title">
-          <img src="./icons/icon-48.png" width="22" height="22" alt="" style="border-radius: 5px; vertical-align: middle;">
-          <span class="dot-live" aria-hidden="true"></span>
-          <span>Axiom Studio v1.4</span>
-        </span>
-        <span id="daemon-badge" class="badge">Проверка демона...</span>
+  <div id="app-shell" class="app-shell">
+    <!-- LEFT SIDEBAR: Projects -> Nested Conversations + Bottom Settings -->
+    <aside id="sidebar" class="sidebar" aria-label="Проекты и диалоги">
+      <div class="sidebar-top">
+        <div class="brand-lockup">
+          <img src="./icons/icon-48.png" width="24" height="24" alt="" class="brand-icon">
+          <span class="brand-name">Axiom Studio</span>
+        </div>
+        <button id="btn-toggle-sidebar" type="button" class="icon-btn" title="Скрыть боковую панель" aria-label="Скрыть боковую панель">◧</button>
       </div>
 
-      <!-- Gemini 4 Model Selector -->
-      <div class="topbar-group">
-        <select id="model-select" class="ctrl-select" aria-label="Модель Gemini API">
-          <option value="gemini-4-carbon">gemini-4-carbon ($2/$10, кэш $0.10)</option>
-          <option value="gemini-4-argon">gemini-4-argon ($2/$10, кэш $0.10)</option>
-          <option value="gemini-4-hydrogen">gemini-4-hydrogen ($1.5/$7.5)</option>
-          <option value="gemini-3.8-flash">gemini-3.8-flash ($0.75/$3.75)</option>
-          <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-          <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-        </select>
-        <button id="btn-refresh-models" type="button" class="btn" title="Загрузить список моделей с вашего API-ключа">Модели</button>
+      <div class="sidebar-actions">
+        <button id="btn-new-conv" type="button" class="btn-new-conv">
+          <span aria-hidden="true">+</span>
+          <span>Новый диалог</span>
+        </button>
+        <button id="btn-open-import" type="button" class="nav-row-btn" title="Загрузить диалоги и русские планы из ~/.gemini/antigravity/brain/">
+          <span class="nav-ico" aria-hidden="true">↺</span>
+          <span>История Antigravity</span>
+        </button>
       </div>
 
-      <div class="topbar-group">
-        <span id="budget-badge" class="badge badge-budget mono">Бюджет: 80.00 ₪ | Расход: 0.00 ₪</span>
-        <div class="mode-seg" role="group" aria-label="Масштаб шрифта">
-          <button id="btn-font-dec" type="button" title="Уменьшить шрифт">A-</button>
-          <button id="btn-font-reset" type="button" title="Масштаб шрифта">112%</button>
-          <button id="btn-font-inc" type="button" title="Увеличить шрифт">A+</button>
-        </div>
-        <button id="btn-open-import" type="button" class="btn btn-emerald" title="Загрузить историю диалогов и русские планы из Antigravity">История Antigravity</button>
-        <button id="btn-open-key" type="button" class="btn">Ключ API</button>
-        <button id="btn-theme" type="button" class="btn">Тема</button>
+      <div class="sidebar-section-hdr">
+        <span>Проекты</span>
+        <span id="projects-count" class="muted-tag">0</span>
       </div>
-    </header>
 
-    <!-- 3-PANE WORKSPACE -->
-    <div class="workspace-grid">
-      <!-- LEFT: Project & File Explorer -->
-      <aside class="pane-left" aria-label="Проводник проектов">
-        <div class="pane-hdr">
-          <span>Проекты</span>
-          <select id="project-select" class="ctrl-select" style="max-inline-size: 9.5rem;" aria-label="Выбор проекта"></select>
+      <nav id="projects-tree" class="projects-tree" aria-label="Список проектов и диалогов"></nav>
+
+      <div class="sidebar-footer">
+        <button id="btn-open-settings" type="button" class="nav-row-btn settings-btn">
+          <span class="nav-ico" aria-hidden="true">⚙</span>
+          <span>Настройки</span>
+          <span id="sidebar-ram-pill" class="ram-pill" title="Память локального Rust-демона"></span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN STAGE: Pure Agent Dialogue + Bottom Floating Composer -->
+    <main class="main-stage">
+      <header class="stage-header">
+        <div class="stage-header-left">
+          <button id="btn-show-sidebar" type="button" class="icon-btn" hidden title="Показать боковую панель" aria-label="Показать боковую панель">◧</button>
+          <span id="crumb-project" class="crumb-project">axiom-studio</span>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span id="crumb-title" class="crumb-title">Новый диалог</span>
         </div>
-        <ul id="file-list" class="file-list" role="listbox" aria-label="Файлы проекта"></ul>
-      </aside>
-
-      <!-- CENTER: GPU Graph / Code / Artifacts + Integrated Axiom-Shell -->
-      <main class="pane-center">
-        <section class="center-top">
-          <div class="tab-strip">
-            <div class="tab-buttons" role="tablist">
-              <button type="button" class="tab-btn" role="tab" data-tab="gpu" aria-selected="true">GPU Граф #Hash &amp; Z3 (WebGL2)</button>
-              <button type="button" class="tab-btn" role="tab" data-tab="code" aria-selected="false">Редактор кода (.ax / .rs)</button>
-              <button type="button" class="tab-btn" role="tab" data-tab="artifacts" aria-selected="false">Артефакты (RU План &amp; Задачи)</button>
-            </div>
-            <div class="topbar-group">
-              <span id="active-file-label" class="mono" style="font-size: 0.77rem; color: var(--muted);">studio_core.ax</span>
-              <button id="btn-save-file" type="button" class="btn">Сохранить [Ctrl+S]</button>
-              <button id="btn-verify-ax" type="button" class="btn btn-primary">Проверить Z3 + Wasm</button>
-            </div>
-          </div>
-
-          <!-- Panel 1: Hardware WebGL2 Cyrillic+English GPU Graph (`studio_core.wasm`) -->
-          <div id="panel-gpu" class="stage-panel">
-            <canvas id="studio-gpu-canvas" aria-label="Аппаратный WebGL2 граф узлов Axiom.Flux и Z3 контрактов"></canvas>
-          </div>
-
-          <!-- Panel 2: Code Editor -->
-          <div id="panel-code" class="stage-panel" hidden>
-            <textarea id="code-editor" class="code-area" spellcheck="false" aria-label="Редактор исходного кода"></textarea>
-          </div>
-
-          <!-- Panel 3: Imported Russian Artifacts (`implementation_plan.md` & `task.md`) -->
-          <div id="panel-artifacts" class="stage-panel" hidden>
-            <div class="artifacts-split">
-              <div class="artifact-col">
-                <div class="pane-hdr"><span>implementation_plan.md (RU)</span></div>
-                <textarea id="plan-editor" class="code-area" spellcheck="false" aria-label="План внедрения на русском языке"></textarea>
-              </div>
-              <div class="artifact-col">
-                <div class="pane-hdr"><span>task.md (RU)</span></div>
-                <textarea id="task-editor" class="code-area" spellcheck="false" aria-label="Список задач"></textarea>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Bottom Integrated Axiom-Shell & Z3 Diagnostics -->
-        <section class="center-bottom" aria-label="Встроенный терминал Axiom-Shell и вывод Z3">
-          <div class="pane-hdr" style="background: #0d1424; border-color: #1e2d4a;">
-            <span>Axiom-Shell &amp; Z3 Verifier (Логи сохраняются в logs/)</span>
-            <div class="topbar-group">
-              <button type="button" class="btn" data-quick-cmd="git status -s">git status</button>
-              <button type="button" class="btn" data-quick-cmd="ls -lh logs/ | tail -n 5">Логи</button>
-            </div>
-          </div>
-          <pre id="shell-output" class="shell-log">Axiom Studio v1.4 готова. Нажмите «История Antigravity», чтобы подтянуть историю беседы и планы, или «+ Новый чат» для чистой задачи!</pre>
-          <form id="shell-form" class="shell-bar">
-            <span class="mono" style="color: var(--emerald);">$</span>
-            <input id="shell-input" type="text" placeholder="Введите команду (например: cargo test, git status, ./scripts/run_checks.sh)..." aria-label="Команда оболочки">
-            <button type="submit" class="btn btn-primary">Выполнить</button>
-          </form>
-        </section>
-      </main>
-
-      <!-- RIGHT: Hybrid Multi-Brain AI Chat -->
-      <aside class="pane-right" aria-label="Чат с ИИ-агентом">
-        <div class="pane-hdr">
-          <span id="chat-mode-title">Агент: gemini-4-carbon</span>
-          <div class="topbar-group">
-            <span id="session-pill" class="mono" style="font-size: 0.8em;">Локально</span>
-            <button id="btn-new-chat" type="button" class="btn" style="padding: 0.18em 0.55em; font-size: 0.82em;" title="Очистить окно чата и начать новый диалог (экономит токены!)">+ Новый чат</button>
-          </div>
+        <div class="stage-header-right">
+          <button id="btn-drawer-artifacts" type="button" class="ghost-btn" title="Открыть русские планы (implementation_plan.md и task.md)">Артефакты</button>
+          <button id="btn-drawer-tools" type="button" class="ghost-btn" title="Открыть GPU Граф, редактор кода и терминал Axiom-Shell">Инструменты</button>
         </div>
-        <div id="chat-feed" class="chat-feed"></div>
-        <form id="chat-form" class="chat-composer">
-          <textarea id="chat-input" placeholder="Напишите задачу по-русски (Ctrl+Enter — отправить)..." aria-label="Сообщение агенту"></textarea>
-          <div class="composer-actions">
-            <span id="last-cost-label" class="mono" style="font-size: 0.74rem; color: var(--muted);">Шаг: 0.000 ₪ (0 ток.)</span>
-            <button id="btn-send-chat" type="submit" class="btn btn-primary">Отправить</button>
+      </header>
+
+      <div id="chat-scroll-wrap" class="chat-scroll-wrap">
+        <div id="chat-feed" class="chat-feed" aria-live="polite"></div>
+        <button id="btn-scroll-bottom" type="button" class="scroll-bottom-btn" hidden title="К последнему сообщению" aria-label="Прокрутить вниз">↓</button>
+      </div>
+
+      <!-- BOTTOM FLOATING COMPOSER CARD -->
+      <div class="composer-dock">
+        <form id="chat-form" class="composer-card">
+          <label for="chat-input" class="visually-hidden">Сообщение для ИИ-агента</label>
+          <textarea
+            id="chat-input"
+            class="composer-textarea"
+            placeholder="Спросите что угодно или поставьте задачу по-русски... (Enter — отправить, Shift+Enter — перенос)"
+          ></textarea>
+          <div class="composer-toolbar">
+            <div class="composer-toolbar-left">
+              <button id="btn-quick-new" type="button" class="composer-icon-btn" title="Начать новый чистый диалог (экономит токены)" aria-label="Новый диалог">+</button>
+              <label for="model-select" class="visually-hidden">Выбор модели Gemini</label>
+              <select id="model-select" class="model-inline-select" title="Модель Gemini API">
+                <option value="gemini-4-carbon">Gemini 4 Carbon ($2/$10)</option>
+                <option value="gemini-4-neon">Gemini 4 Neon</option>
+                <option value="gemini-4-argon">Gemini 4 Argon ($2/$10)</option>
+                <option value="gemini-4-hydrogen">Gemini 4 Hydrogen ($1.5/$7.5)</option>
+                <option value="gemini-3.8-flash">Gemini 3.8 Flash ($0.75/$3.75)</option>
+                <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              </select>
+            </div>
+            <div class="composer-toolbar-right">
+              <span id="cost-inline-pill" class="cost-inline-pill mono" title="Расход за текущую сессию">0.00 ₪</span>
+              <button id="btn-send-chat" type="submit" class="send-circle-btn" title="Отправить (Enter)" aria-label="Отправить">→</button>
+            </div>
           </div>
         </form>
-      </aside>
-    </div>
+      </div>
+    </main>
+
+    <!-- OPTIONAL COLLAPSIBLE RIGHT DRAWER (Hidden by default for zero clutter!) -->
+    <aside id="inspector-drawer" class="inspector-drawer" hidden aria-label="Инструменты и артефакты проекта">
+      <div class="drawer-header">
+        <div class="drawer-tabs" role="tablist">
+          <button type="button" class="drawer-tab" role="tab" data-tab="artifacts" aria-selected="true">Планы (RU)</button>
+          <button type="button" class="drawer-tab" role="tab" data-tab="gpu" aria-selected="false">GPU Граф</button>
+          <button type="button" class="drawer-tab" role="tab" data-tab="code" aria-selected="false">Код</button>
+          <button type="button" class="drawer-tab" role="tab" data-tab="shell" aria-selected="false">Терминал</button>
+        </div>
+        <button id="btn-close-drawer" type="button" class="icon-btn" title="Закрыть панель" aria-label="Закрыть панель">✕</button>
+      </div>
+
+      <!-- Tab 1: Artifacts -->
+      <section id="panel-artifacts" class="drawer-panel">
+        <div class="artifact-block">
+          <div class="sub-hdr"><span>implementation_plan.md (RU)</span></div>
+          <textarea id="plan-editor" class="code-area" spellcheck="false" aria-label="План внедрения на русском"></textarea>
+        </div>
+        <div class="artifact-block">
+          <div class="sub-hdr"><span>task.md (RU)</span></div>
+          <textarea id="task-editor" class="code-area" spellcheck="false" aria-label="Список задач"></textarea>
+        </div>
+      </section>
+
+      <!-- Tab 2: Hardware WebGL2 GPU Graph (`studio_core.wasm`) -->
+      <section id="panel-gpu" class="drawer-panel" hidden>
+        <div class="sub-hdr">
+          <span>WebGL2 Семантический граф (studio_core.wasm)</span>
+          <button id="btn-verify-ax-gpu" type="button" class="btn-small">Проверить Z3</button>
+        </div>
+        <div class="gpu-stage">
+          <canvas id="studio-gpu-canvas" aria-label="Аппаратный WebGL2 граф узлов Axiom.Flux"></canvas>
+        </div>
+      </section>
+
+      <!-- Tab 3: On-demand File Viewer / Editor -->
+      <section id="panel-code" class="drawer-panel" hidden>
+        <div class="sub-hdr">
+          <select id="file-select" class="ctrl-select" aria-label="Файл проекта"></select>
+          <div class="row-gap">
+            <button id="btn-save-file" type="button" class="btn-small">Сохранить</button>
+            <button id="btn-verify-ax" type="button" class="btn-small btn-accent">Z3 + Wasm</button>
+          </div>
+        </div>
+        <textarea id="code-editor" class="code-area" spellcheck="false" aria-label="Редактор исходного кода"></textarea>
+      </section>
+
+      <!-- Tab 4: Integrated Axiom-Shell -->
+      <section id="panel-shell" class="drawer-panel" hidden>
+        <div class="sub-hdr">
+          <span>Axiom-Shell (логи в logs/)</span>
+          <div class="row-gap">
+            <button type="button" class="btn-small" data-quick-cmd="git status -s">git status</button>
+            <button type="button" class="btn-small" data-quick-cmd="ls -lh logs/ | tail -n 5">Логи</button>
+          </div>
+        </div>
+        <pre id="shell-output" class="shell-log">Axiom-Shell готова. Команды выполняются в папке выбранного проекта.</pre>
+        <form id="shell-form" class="shell-bar">
+          <span class="mono shell-prompt">$</span>
+          <input id="shell-input" type="text" placeholder="Команда (cargo test, git status)..." aria-label="Команда терминала">
+          <button type="submit" class="btn-small btn-accent">Выполнить</button>
+        </form>
+      </section>
+    </aside>
   </div>
 
-  <!-- MODAL 1: Import Antigravity Brain Session (<dialog closedby="any">) -->
-  <dialog id="dialog-import" class="studio-dialog" closedby="any" aria-labelledby="import-title">
-    <h3 id="import-title" style="margin-block: 0 0.4rem;">Импорт диалога и артефактов из Antigravity</h3>
-    <p style="margin: 0; color: var(--muted); font-size: 0.84rem;">
-      Прямое чтение из <code>~/.gemini/antigravity/brain/</code> (история сообщений <code>transcript.jsonl</code> + русские планы <code>implementation_plan.md</code> и <code>task.md</code>):
-    </p>
-    <ul id="session-list" class="session-list"></ul>
-    <div style="display: flex; justify-content: flex-end;">
-      <button type="button" class="btn" data-close-dialog="dialog-import">Закрыть</button>
+  <!-- MODAL 1: Settings (<dialog closedby="any">) — All secondary controls live here! -->
+  <dialog id="dialog-settings" class="studio-dialog" closedby="any" aria-labelledby="settings-title">
+    <div class="dialog-hdr">
+      <h3 id="settings-title">Настройки Axiom Studio</h3>
+      <button type="button" class="icon-btn" data-close-dialog="dialog-settings" aria-label="Закрыть">✕</button>
+    </div>
+
+    <div class="settings-body">
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Состояние локального демона</div>
+          <div id="daemon-status-text" class="setting-sub">Проверка...</div>
+        </div>
+        <span id="daemon-dot" class="status-dot"></span>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Тема оформления</div>
+          <div class="setting-sub">Тёмная или светлая палитра интерфейса</div>
+        </div>
+        <button id="btn-theme" type="button" class="btn-small">Переключить тему</button>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Масштаб шрифта</div>
+          <div class="setting-sub">Комфортный размер текста диалога</div>
+        </div>
+        <div class="seg-group" role="group" aria-label="Масштаб шрифта">
+          <button id="btn-font-dec" type="button">A-</button>
+          <button id="btn-font-reset" type="button">112%</button>
+          <button id="btn-font-inc" type="button">A+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Бюджет и расход Gemini API</div>
+          <div id="budget-detail-text" class="setting-sub mono">Бюджет: 80.00 ₪ | Расход: 0.00 ₪</div>
+        </div>
+        <button id="btn-reset-budget" type="button" class="btn-small">Сбросить</button>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Список моделей Gemini API</div>
+          <div id="models-sync-status" class="setting-sub">Загрузить доступные модели с вашего ключа</div>
+        </div>
+        <button id="btn-refresh-models" type="button" class="btn-small">Обновить модели</button>
+      </div>
+
+      <form id="key-form" class="setting-key-box">
+        <label for="key-input" class="setting-label">GEMINI_API_KEY (сохраняется локально в ~/.env, права 0600)</label>
+        <div class="key-input-row">
+          <input id="key-input" type="password" class="ctrl-input mono" placeholder="AIzaSy..." autocomplete="off">
+          <button type="submit" class="btn-small btn-accent">Сохранить ключ</button>
+        </div>
+        <div class="setting-sub">
+          Ключ никогда не попадает в Git или логи. Получить можно в <a href="https://aistudio.google.com/app/api-keys" target="_blank" rel="noopener">Google AI Studio</a>.
+        </div>
+      </form>
     </div>
   </dialog>
 
-  <!-- MODAL 2: Save GEMINI_API_KEY Privately to ~/.env (<dialog closedby="any">) -->
-  <dialog id="dialog-key" class="studio-dialog" closedby="any" aria-labelledby="key-title">
-    <h3 id="key-title" style="margin-block: 0 0.4rem;">Настройка GEMINI_API_KEY (Локально в ~/.env)</h3>
-    <p style="margin-block: 0 0.8rem; color: var(--muted); font-size: 0.84rem;">
-      Ключ сохраняется локальным демоном строго в <code>~/.env</code> с правами <code>0600</code> и никогда не попадает в Git или логи. Получить ключ можно в <a href="https://aistudio.google.com/app/api-keys" target="_blank" rel="noopener">Google AI Studio</a>.
+  <!-- MODAL 2: Import Antigravity Brain History (<dialog closedby="any">) -->
+  <dialog id="dialog-import" class="studio-dialog" closedby="any" aria-labelledby="import-title">
+    <div class="dialog-hdr">
+      <h3 id="import-title">История диалогов Antigravity</h3>
+      <button type="button" class="icon-btn" data-close-dialog="dialog-import" aria-label="Закрыть">✕</button>
+    </div>
+    <p class="setting-sub" style="margin-block: 0 0.7rem;">
+      Выберите диалог из <code>~/.gemini/antigravity/brain/</code>, чтобы перенести сообщения и русские планы в текущий проект:
     </p>
-    <form id="key-form" style="display: flex; flex-direction: column; gap: 0.7rem;">
-      <input id="key-input" type="password" class="ctrl-input mono" placeholder="AIzaSy..." autocomplete="off" aria-label="GEMINI_API_KEY">
-      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-        <button type="button" class="btn" data-close-dialog="dialog-key">Отмена</button>
-        <button type="submit" class="btn btn-primary">Сохранить локально (0600)</button>
-      </div>
-    </form>
+    <ul id="session-list" class="session-list"></ul>
   </dialog>
 
   <script type="module" src="./studio_app.js"></script>

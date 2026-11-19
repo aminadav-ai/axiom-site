@@ -1,287 +1,617 @@
-import { mountStudioGpuCanvas } from './studio_gpu.js';
+// Axiom Studio v2.0 — Agent-First Minimalist UI + Persistent Project Conversations + On-Demand WebGL2/Z3 Drawer
 
-// Cloud Sandbox Fallback Projects (used on GitHub Pages / axiom-lang.org when local 127.0.0.1:7700 daemon isn't running)
 const DEMO_PROJECTS = [
-  {
-    name: 'axiom-studio',
-    path: '/home/aminadav/Projects/axiom-studio',
-    files: ['src/studio_core.ax', 'server/src/main.rs', 'web/studio_gpu.js', 'README.md'],
-  },
-  {
-    name: 'axiom-grid',
-    path: '/home/aminadav/Projects/axiom-grid',
-    files: ['src/grid.ax', 'scripts/verify_grid.mjs', 'README.md'],
-  },
-  {
-    name: 'axiom-workspace',
-    path: '/home/aminadav/Projects/axiom-workspace',
-    files: ['src/workspace.ax', 'scripts/verify_workspace.mjs', 'README.md'],
-  },
-  {
-    name: 'axiom-lang',
-    path: '/home/aminadav/Projects/axiom-lang',
-    files: ['examples/payment_demo.ax', 'examples/anti_stub_demo.ax', 'src/strata_wasm.rs'],
-  },
+  { name: 'axiom-studio', path: '~/Projects/axiom-studio', files: ['src/studio_core.ax', 'server/src/main.rs', 'web/index.html', 'web/styles.css'] },
+  { name: 'axiom-lang', path: '~/Projects/axiom-lang', files: ['src/main.rs', 'src/strata_wasm.rs'] },
+  { name: 'axiom-site', path: '~/Projects/axiom-site', files: ['public/index.html', 'wrangler.jsonc'] },
+  { name: 'axiom-ui', path: '~/Projects/axiom-ui', files: ['src/ui.ax'] },
 ];
 
-const DEMO_CODE = `// Axiom Studio v1.0 — Z3-Verified Shekel Budget Kernel
-fn remaining_budget_agorot(budget_agorot: i64, spent_agorot: i64) -> i64
-  req budget_agorot >= 0 && spent_agorot >= 0
-  ens result >= 0 && result <= budget_agorot
+const DEMO_CODE = `// Axiom Studio v2.0 — 11.68 KB Wasm GPU Core
+fn pack_rgb(r: Int, g: Int, b: Int) -> Int
+    req r >= 0 && r <= 255
+    req g >= 0 && g <= 255
+    req b >= 0 && b <= 255
 {
-  if spent_agorot >= budget_agorot {
-    0
-  } else {
-    budget_agorot - spent_agorot
-  }
-}`;
+    return (r * 65536) + (g * 256) + b;
+}
+`;
 
-let isLocalDaemon = false;
-let projects = [];
-let currentProject = null;
-let currentFilePath = '';
-const aiMode = 'gemini';
-let spentAgorotTotal = 0;
-let chatHistory = [];
-let importedSessionId = null;
+// --- DOM References ---
+const sidebar = document.getElementById('sidebar');
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const btnShowSidebar = document.getElementById('btn-show-sidebar');
+const projectsTree = document.getElementById('projects-tree');
+const projectsCountEl = document.getElementById('projects-count');
+const sidebarRamPill = document.getElementById('sidebar-ram-pill');
 
-const daemonBadge = document.getElementById('daemon-badge');
-const budgetBadge = document.getElementById('budget-badge');
-const projectSelect = document.getElementById('project-select');
-const fileListEl = document.getElementById('file-list');
-const activeFileLabel = document.getElementById('active-file-label');
-const codeEditor = document.getElementById('code-editor');
+const crumbProject = document.getElementById('crumb-project');
+const crumbTitle = document.getElementById('crumb-title');
+const chatScrollWrap = document.getElementById('chat-scroll-wrap');
+const chatFeed = document.getElementById('chat-feed');
+const btnScrollBottom = document.getElementById('btn-scroll-bottom');
+
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const btnSendChat = document.getElementById('btn-send-chat');
+const modelSelect = document.getElementById('model-select');
+const costInlinePill = document.getElementById('cost-inline-pill');
+
+const inspectorDrawer = document.getElementById('inspector-drawer');
+const btnDrawerArtifacts = document.getElementById('btn-drawer-artifacts');
+const btnDrawerTools = document.getElementById('btn-drawer-tools');
+const btnCloseDrawer = document.getElementById('btn-close-drawer');
+
 const planEditor = document.getElementById('plan-editor');
 const taskEditor = document.getElementById('task-editor');
+const fileSelect = document.getElementById('file-select');
+const codeEditor = document.getElementById('code-editor');
 const shellOutput = document.getElementById('shell-output');
-const chatFeed = document.getElementById('chat-feed');
-const chatInput = document.getElementById('chat-input');
-const chatModeTitle = document.getElementById('chat-mode-title');
-const sessionPill = document.getElementById('session-pill');
-const lastCostLabel = document.getElementById('last-cost-label');
-const modelSelect = document.getElementById('model-select');
+const gpuCanvas = document.getElementById('studio-gpu-canvas');
 
-// 1. Mount Hardware WebGL2 Cyrillic+English+₪ Semantic Graph (`studio_core.wasm`)
-const gpuCtrl = await mountStudioGpuCanvas({
-  canvas: document.getElementById('studio-gpu-canvas'),
-  wasmUrl: './studio_core.wasm',
-});
+const dialogSettings = document.getElementById('dialog-settings');
+const dialogImport = document.getElementById('dialog-import');
+const daemonStatusText = document.getElementById('daemon-status-text');
+const budgetDetailText = document.getElementById('budget-detail-text');
+const modelsSyncStatus = document.getElementById('models-sync-status');
+
+// --- App State ---
+let isLocalDaemon = false;
+let projects = [];
+let conversations = []; // [{ id, project, title, updated_at, message_count }]
+let collapsedProjects = new Set();
+let activeProjectName = 'axiom-studio';
+let activeConv = null; // { id, project, title, updated_at, messages: [{role, content, meta}], plan_md, task_md }
+let currentFilePath = '';
+let spentIlsTotal = Number(localStorage.getItem('axiom_studio_spent_ils') || '0');
+let gpuBooted = false;
+let wasmExports = null;
+let wasmMem = null;
+
+// --- Helpers ---
+function genConvId() {
+  return `conv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function formatAge(tsSec) {
+  if (!tsSec) return '';
+  const diff = Math.max(0, Math.floor(Date.now() / 1000) - tsSec);
+  if (diff < 60) return 'сейчас';
+  if (diff < 3600) return `${Math.floor(diff / 60)}м`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}ч`;
+  return `${Math.floor(diff / 86400)}д`;
+}
+
+function getProjectByName(name) {
+  return projects.find((p) => p.name === name) || projects[0] || { name: 'axiom-studio', path: '', files: [] };
+}
 
 function updateBudgetUi() {
-  const spentIls = (spentAgorotTotal / 100).toFixed(2);
-  const leftIls = Math.max(0, 80 - spentAgorotTotal / 100).toFixed(2);
-  budgetBadge.textContent = `Остаток: ${leftIls} ₪ | Расход: ${spentIls} ₪`;
-  const modeNum = aiMode === 'ultra' ? 0 : (aiMode === 'gemini' ? 1 : 2);
-  if (gpuCtrl) {
-    gpuCtrl.setTelemetry(modeNum, 6, 6, spentAgorotTotal, 12);
+  const spent = spentIlsTotal.toFixed(2);
+  const rem = Math.max(0, 80 - spentIlsTotal).toFixed(2);
+  costInlinePill.textContent = `${spent} ₪`;
+  budgetDetailText.textContent = `Бюджет: ${rem} ₪ | Расход: ${spent} ₪`;
+  localStorage.setItem('axiom_studio_spent_ils', String(spentIlsTotal));
+}
+
+// --- Safe DOM Markdown Renderer (Zero innerHTML!) ---
+function appendInlineFormatted(parent, text) {
+  const tokenRe = /(`[^`]+`|\*\*[^*]+\*\*)/g;
+  let lastIdx = 0;
+  let match;
+  while ((match = tokenRe.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      parent.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
+    }
+    const tok = match[0];
+    if (tok.startsWith('`')) {
+      const code = document.createElement('code');
+      code.className = 'md-code-inline';
+      code.textContent = tok.slice(1, -1);
+      parent.appendChild(code);
+    } else if (tok.startsWith('**')) {
+      const strong = document.createElement('strong');
+      strong.textContent = tok.slice(2, -2);
+      parent.appendChild(strong);
+    }
+    lastIdx = tokenRe.lastIndex;
+  }
+  if (lastIdx < text.length) {
+    parent.appendChild(document.createTextNode(text.slice(lastIdx)));
   }
 }
 
-function appendChatMsg(role, text, metaExtra = '') {
-  const wrap = document.createElement('div');
-  wrap.className = role === 'user' ? 'msg msg-user' : 'msg';
-
-  const meta = document.createElement('div');
-  meta.className = 'msg-meta';
-  const who = document.createElement('span');
-  who.textContent = role === 'user' ? 'Вы (Разработчик)' : 'Axiom Studio Агент';
-  const info = document.createElement('span');
-  info.textContent = metaExtra;
-  meta.append(who, info);
-
-  const body = document.createElement('div');
-  body.textContent = text;
-
-  wrap.append(meta, body);
-  chatFeed.appendChild(wrap);
-  chatFeed.scrollTop = chatFeed.scrollHeight;
-}
-
-// 2. Dialog Helpers + Safari `closedby="any"` Fallback
-function setupLightDismissFallback(dlg) {
-  if (!dlg) return;
-  if (!('closedBy' in HTMLDialogElement.prototype)) {
-    dlg.addEventListener('click', (event) => {
-      if (event.target !== dlg) return;
-      const rect = dlg.getBoundingClientRect();
-      const inside =
-        rect.top <= event.clientY &&
-        event.clientY <= rect.top + rect.height &&
-        rect.left <= event.clientX &&
-        event.clientX <= rect.left + rect.width;
-      if (!inside) dlg.close();
-    });
+function renderMarkdownSafe(container, rawText) {
+  const text = String(rawText || '');
+  const parts = text.split(/```(?:[a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g);
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 1) {
+      const pre = document.createElement('pre');
+      pre.className = 'md-pre';
+      const code = document.createElement('code');
+      code.textContent = parts[i].replace(/\n$/, '');
+      pre.appendChild(code);
+      container.appendChild(pre);
+      continue;
+    }
+    const lines = parts[i].split('\n');
+    let ul = null;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        ul = null;
+        continue;
+      }
+      if (/^#{1,4}\s+/.test(trimmed)) {
+        ul = null;
+        const h = document.createElement('div');
+        h.className = 'md-h';
+        appendInlineFormatted(h, trimmed.replace(/^#{1,4}\s+/, ''));
+        container.appendChild(h);
+      } else if (/^([-*•]|\d+\.)\s+/.test(trimmed)) {
+        if (!ul) {
+          ul = document.createElement('ul');
+          ul.className = 'md-ul';
+          container.appendChild(ul);
+        }
+        const li = document.createElement('li');
+        appendInlineFormatted(li, trimmed.replace(/^([-*•]|\d+\.)\s+/, ''));
+        ul.appendChild(li);
+      } else {
+        ul = null;
+        const p = document.createElement('p');
+        p.className = 'md-p';
+        appendInlineFormatted(p, trimmed);
+        container.appendChild(p);
+      }
+    }
   }
 }
 
-const dialogImport = document.getElementById('dialog-import');
-const dialogKey = document.getElementById('dialog-key');
-setupLightDismissFallback(dialogImport);
-setupLightDismissFallback(dialogKey);
-
-document.querySelectorAll('[data-close-dialog]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const d = document.getElementById(btn.getAttribute('data-close-dialog'));
-    if (d) d.close();
-  });
-});
-
-// 3. Center Workspace Tabs (`GPU Graph`, `Code Editor`, `Artifacts`)
-function switchCenterTab(tabId) {
-  document.querySelectorAll('[data-tab]').forEach((b) => {
-    b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === tabId));
-  });
-  document.getElementById('panel-gpu').hidden = tabId !== 'gpu';
-  document.getElementById('panel-code').hidden = tabId !== 'code';
-  document.getElementById('panel-artifacts').hidden = tabId !== 'artifacts';
+// --- Chat Rendering ---
+function scrollToBottom(force = false) {
+  if (force || chatScrollWrap.scrollHeight - chatScrollWrap.scrollTop - chatScrollWrap.clientHeight < 140) {
+    chatScrollWrap.scrollTop = chatScrollWrap.scrollHeight;
+  }
 }
 
-document.querySelectorAll('[data-tab]').forEach((btn) => {
-  btn.addEventListener('click', () => switchCenterTab(btn.getAttribute('data-tab')));
+chatScrollWrap.addEventListener('scroll', () => {
+  const farUp = chatScrollWrap.scrollHeight - chatScrollWrap.scrollTop - chatScrollWrap.clientHeight > 180;
+  btnScrollBottom.hidden = !farUp;
 });
 
-// 4. Gemini Model Selector & "+ New Chat" Button
-modelSelect.addEventListener('change', () => {
-  chatModeTitle.textContent = `Агент: ${modelSelect.value}`;
-});
+btnScrollBottom.addEventListener('click', () => scrollToBottom(true));
 
-document.getElementById('btn-new-chat')?.addEventListener('click', () => {
-  chatHistory = [];
-  importedSessionId = null;
+function renderEmptyWelcome() {
   chatFeed.textContent = '';
-  sessionPill.textContent = 'Новый чат';
-  appendChatMsg(
-    'assistant',
-    'Начат чистый диалог (старая история сброшена — максимальная экономия входных токенов!). Напишите задачу для проекта.',
-    'Готово'
-  );
-});
+  const box = document.createElement('div');
+  box.className = 'empty-welcome';
 
-// 5. Load Projects & Files
-function renderFileList() {
-  fileListEl.textContent = '';
-  if (!currentProject) return;
-  for (const rel of currentProject.files) {
-    const li = document.createElement('li');
-    li.className = 'file-item mono';
-    li.setAttribute('role', 'option');
-    const full = `${currentProject.path}/${rel}`;
-    li.setAttribute('aria-selected', String(full === currentFilePath));
-    li.textContent = rel;
-    li.addEventListener('click', () => openFile(full, rel));
-    fileListEl.appendChild(li);
+  const img = document.createElement('img');
+  img.src = './icons/icon-128.png';
+  img.width = 52;
+  img.height = 52;
+  img.alt = '';
+
+  const h1 = document.createElement('h1');
+  h1.textContent = `Проект: ${activeProjectName}`;
+
+  const p = document.createElement('p');
+  p.textContent = 'Напишите задачу по-русски. Агент Gemini 4 сам прочитает нужные файлы, внесёт правки и проверит сборку.';
+
+  box.append(img, h1, p);
+  chatFeed.appendChild(box);
+}
+
+function appendMessageEl(role, content, meta = '') {
+  const welcome = chatFeed.querySelector('.empty-welcome');
+  if (welcome) welcome.remove();
+
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  if (role === 'user') {
+    bubble.textContent = content;
+  } else {
+    renderMarkdownSafe(bubble, content);
+  }
+  row.appendChild(bubble);
+
+  if (meta) {
+    const metaEl = document.createElement('div');
+    metaEl.className = 'msg-meta mono';
+    metaEl.textContent = meta;
+    row.appendChild(metaEl);
+  }
+
+  chatFeed.appendChild(row);
+  scrollToBottom(true);
+  return row;
+}
+
+function renderActiveConversation() {
+  if (!activeConv) {
+    renderEmptyWelcome();
+    return;
+  }
+  crumbProject.textContent = activeConv.project;
+  crumbTitle.textContent = activeConv.title || 'Новый диалог';
+  planEditor.value = activeConv.plan_md || '';
+  taskEditor.value = activeConv.task_md || '';
+
+  chatFeed.textContent = '';
+  if (!activeConv.messages || activeConv.messages.length === 0) {
+    renderEmptyWelcome();
+  } else {
+    for (const m of activeConv.messages) {
+      appendMessageEl(m.role, m.content, m.meta || '');
+    }
+  }
+  syncProjectFilesSelect();
+  renderProjectsTree();
+}
+
+// --- Conversations Persistence (Local Rust Daemon or Cloud localStorage) ---
+function loadCloudConvs() {
+  try {
+    return JSON.parse(localStorage.getItem('axiom_studio_convs_v2') || '[]');
+  } catch {
+    return [];
   }
 }
 
-async function openFile(fullPath, relName) {
-  currentFilePath = fullPath;
-  activeFileLabel.textContent = relName;
-  renderFileList();
+function saveCloudConvs(all) {
+  localStorage.setItem('axiom_studio_convs_v2', JSON.stringify(all));
+}
 
-  if (!isLocalDaemon) {
-    codeEditor.value = DEMO_CODE;
-    return;
+async function refreshConversationsList() {
+  if (isLocalDaemon) {
+    try {
+      const r = await fetch('/api/conversations', { cache: 'no-store' });
+      const d = await r.json();
+      conversations = Array.isArray(d.conversations) ? d.conversations : [];
+    } catch {
+      conversations = [];
+    }
+  } else {
+    conversations = loadCloudConvs().map((c) => ({
+      id: c.id,
+      project: c.project,
+      title: c.title,
+      updated_at: c.updated_at,
+      message_count: (c.messages || []).length,
+    }));
+  }
+  renderProjectsTree();
+}
+
+async function saveActiveConversation() {
+  if (!activeConv) return;
+  activeConv.updated_at = Math.floor(Date.now() / 1000);
+  activeConv.plan_md = planEditor.value;
+  activeConv.task_md = taskEditor.value;
+
+  if (isLocalDaemon) {
+    await fetch('/api/conversations/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activeConv),
+    }).catch(() => {});
+  } else {
+    const all = loadCloudConvs().filter((c) => c.id !== activeConv.id);
+    all.unshift(activeConv);
+    saveCloudConvs(all.slice(0, 40));
   }
 
-  const r = await fetch(`/api/file?path=${encodeURIComponent(fullPath)}`);
-  const data = await r.json();
-  if (data.ok) {
-    codeEditor.value = data.content;
-    if (fullPath.endsWith('.ax')) {
-      await verifyCurrentAxFile(false);
+  const idx = conversations.findIndex((c) => c.id === activeConv.id);
+  const summary = {
+    id: activeConv.id,
+    project: activeConv.project,
+    title: activeConv.title,
+    updated_at: activeConv.updated_at,
+    message_count: activeConv.messages.length,
+  };
+  if (idx >= 0) conversations.splice(idx, 1);
+  conversations.unshift(summary);
+  renderProjectsTree();
+}
+
+async function openConversationById(id) {
+  if (isLocalDaemon) {
+    const r = await fetch(`/api/conversations/get?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+    const d = await r.json();
+    if (d.ok && d.conversation) {
+      activeConv = d.conversation;
+      activeProjectName = activeConv.project || 'axiom-studio';
+      collapsedProjects.delete(activeProjectName);
+      renderActiveConversation();
+    }
+  } else {
+    const found = loadCloudConvs().find((c) => c.id === id);
+    if (found) {
+      activeConv = found;
+      activeProjectName = activeConv.project || 'axiom-studio';
+      renderActiveConversation();
     }
   }
 }
 
-async function verifyCurrentAxFile(switchLog = true) {
-  if (!isLocalDaemon) {
-    shellOutput.textContent =
-      '[CLOUD DEMO] Z3 Proved 45/45 obligations in studio_core.ax -> 11.68 KB Wasm (4.43 KB gzip), 0 warnings!\n' +
-      'Запустите ./start_studio.sh локально для прямой компиляции файлов на вашем диске.';
-    return;
+async function deleteConversationById(id) {
+  if (isLocalDaemon) {
+    await fetch('/api/conversations/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+  } else {
+    saveCloudConvs(loadCloudConvs().filter((c) => c.id !== id));
   }
-
-  let target = currentFilePath;
-  if (!target.endsWith('.ax') && currentProject) {
-    const axRel = currentProject.files.find((f) => f.endsWith('.ax'));
-    if (axRel) target = `${currentProject.path}/${axRel}`;
+  conversations = conversations.filter((c) => c.id !== id);
+  if (activeConv && activeConv.id === id) {
+    startNewConversation(activeProjectName);
+  } else {
+    renderProjectsTree();
   }
-  if (!target.endsWith('.ax')) {
-    shellOutput.textContent = 'Выберите файл с расширением .ax для запуска Z3 и компилятора Strata Wasm.';
-    return;
-  }
+}
 
-  if (switchLog) shellOutput.textContent = `Проверка Z3 и сборка Wasm: ${target} ...`;
-  const r = await fetch('/api/axiom/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: target }),
-  });
-  const d = await r.json();
-  shellOutput.textContent =
-    `=== AXIOM Z3 & STRATA VERIFIER ===\n` +
-    `Файл: ${target}\n` +
-    `Статус: ${d.ok ? 'ДОКАЗАНО Z3 (PASS)' : 'ОШИБКА КОНТРАКТА / СИНТАКСИСА'}\n` +
-    `${d.output || ''}\n` +
-    (d.log_file ? `Лог сохранён: ${d.log_file}` : '');
+function startNewConversation(projectName = activeProjectName) {
+  activeProjectName = projectName || 'axiom-studio';
+  collapsedProjects.delete(activeProjectName);
+  activeConv = {
+    id: genConvId(),
+    project: activeProjectName,
+    title: 'Новый диалог',
+    updated_at: Math.floor(Date.now() / 1000),
+    messages: [],
+    plan_md: '',
+    task_md: '',
+  };
+  renderActiveConversation();
+  chatInput.focus();
+}
 
-  if (gpuCtrl && Array.isArray(d.functions) && d.functions.length > 0) {
-    const coords = [
-      [16, 24], [16, 68], [48, 22], [48, 68], [80, 34], [82, 76],
-    ];
-    for (let i = 0; i < 6; i++) {
-      const fn = d.functions[i % d.functions.length];
-      gpuCtrl.setGraphNode(
-        i,
-        fn.hash24 || 0x768a63,
-        d.ok ? 1 : 0,
-        fn.cap_mask || 0,
-        coords[i][0],
-        coords[i][1]
-      );
+// --- Left Sidebar: Projects -> Nested Conversations Tree ---
+function renderProjectsTree() {
+  projectsTree.textContent = '';
+  projectsCountEl.textContent = String(projects.length);
+
+  for (const proj of projects) {
+    const group = document.createElement('div');
+    group.className = 'project-group';
+
+    const projConvs = conversations.filter((c) => c.project === proj.name);
+    const isCollapsed = collapsedProjects.has(proj.name);
+
+    const row = document.createElement('div');
+    row.className = `project-row${proj.name === activeProjectName ? ' active-project' : ''}`;
+
+    const label = document.createElement('span');
+    label.className = 'project-label';
+    label.textContent = `📁 ${proj.name}`;
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'project-add-btn';
+    addBtn.textContent = '+';
+    addBtn.title = `Новый диалог в проекте ${proj.name}`;
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startNewConversation(proj.name);
+    });
+
+    row.addEventListener('click', () => {
+      activeProjectName = proj.name;
+      if (collapsedProjects.has(proj.name)) {
+        collapsedProjects.delete(proj.name);
+      } else if (projConvs.length > 0) {
+        collapsedProjects.add(proj.name);
+      }
+      renderProjectsTree();
+    });
+
+    row.append(label, addBtn);
+    group.appendChild(row);
+
+    if (!isCollapsed && projConvs.length > 0) {
+      const ul = document.createElement('ul');
+      ul.className = 'conv-list';
+      for (const c of projConvs) {
+        const li = document.createElement('li');
+        li.className = `conv-item${activeConv && activeConv.id === c.id ? ' active' : ''}`;
+
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'conv-title';
+        titleSpan.textContent = c.title || 'Новый диалог';
+
+        const meta = document.createElement('span');
+        meta.className = 'conv-meta';
+
+        const age = document.createElement('span');
+        age.className = 'conv-age';
+        age.textContent = formatAge(c.updated_at);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'conv-del-btn';
+        delBtn.textContent = '×';
+        delBtn.title = 'Удалить диалог';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteConversationById(c.id);
+        });
+
+        meta.append(age, delBtn);
+        li.append(titleSpan, meta);
+        li.addEventListener('click', () => openConversationById(c.id));
+        ul.appendChild(li);
+      }
+      group.appendChild(ul);
     }
-    gpuCtrl.setTelemetry(
-      aiMode === 'ultra' ? 0 : (aiMode === 'gemini' ? 1 : 2),
-      d.functions.length,
-      d.ok ? d.functions.length : 0,
-      spentAgorotTotal,
-      Math.max(1, Math.round(d.wasm_kb || 15))
-    );
+
+    projectsTree.appendChild(group);
   }
 }
 
-document.getElementById('btn-verify-ax').addEventListener('click', () => verifyCurrentAxFile(true));
+// --- Sidebar & Right Drawer Controls ---
+btnToggleSidebar.addEventListener('click', () => {
+  sidebar.hidden = true;
+  btnShowSidebar.hidden = false;
+});
 
-async function saveCurrentFile() {
-  if (!isLocalDaemon || !currentFilePath) {
-    shellOutput.textContent = '[CLOUD DEMO] Локальное сохранение активно при запуске ./start_studio.sh.';
-    return;
-  }
-  const r = await fetch('/api/file', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path: currentFilePath, content: codeEditor.value }),
+btnShowSidebar.addEventListener('click', () => {
+  sidebar.hidden = false;
+  btnShowSidebar.hidden = true;
+});
+
+function openDrawerTab(tabName) {
+  inspectorDrawer.hidden = false;
+  btnDrawerArtifacts.classList.toggle('active', tabName === 'artifacts');
+  btnDrawerTools.classList.toggle('active', tabName !== 'artifacts');
+  document.querySelectorAll('.drawer-tab').forEach((btn) => {
+    btn.setAttribute('aria-selected', String(btn.dataset.tab === tabName));
   });
-  const d = await r.json();
-  shellOutput.textContent = d.ok
-    ? `Сохранено: ${currentFilePath}`
-    : `Ошибка сохранения: ${d.error}`;
+  document.querySelectorAll('.drawer-panel').forEach((panel) => {
+    panel.hidden = panel.id !== `panel-${tabName}`;
+  });
+  if (tabName === 'gpu' && !gpuBooted) {
+    gpuBooted = true;
+    bootGpuCore();
+  }
 }
 
-document.getElementById('btn-save-file').addEventListener('click', saveCurrentFile);
-window.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-    e.preventDefault();
-    saveCurrentFile();
+btnDrawerArtifacts.addEventListener('click', () => {
+  if (!inspectorDrawer.hidden && !document.getElementById('panel-artifacts').hidden) {
+    inspectorDrawer.hidden = true;
+    btnDrawerArtifacts.classList.remove('active');
+  } else {
+    openDrawerTab('artifacts');
   }
 });
 
-// 6. Antigravity Brain Importer (`~/.gemini/antigravity/brain/*`)
-async function importSessionById(sessionId) {
+btnDrawerTools.addEventListener('click', () => {
+  if (!inspectorDrawer.hidden && document.getElementById('panel-artifacts').hidden) {
+    inspectorDrawer.hidden = true;
+    btnDrawerTools.classList.remove('active');
+  } else {
+    openDrawerTab('gpu');
+  }
+});
+
+btnCloseDrawer.addEventListener('click', () => {
+  inspectorDrawer.hidden = true;
+  btnDrawerArtifacts.classList.remove('active');
+  btnDrawerTools.classList.remove('active');
+});
+
+document.querySelectorAll('.drawer-tab').forEach((btn) => {
+  btn.addEventListener('click', () => openDrawerTab(btn.dataset.tab));
+});
+
+// --- Chat Submission (IME-Safe Enter + Gemini 4 API) ---
+async function submitChat() {
+  const prompt = chatInput.value.trim();
+  if (!prompt || btnSendChat.disabled) return;
+  if (!activeConv) startNewConversation(activeProjectName);
+
+  chatInput.value = '';
+  if (activeConv.messages.length === 0 || activeConv.title === 'Новый диалог') {
+    activeConv.title = prompt.length > 44 ? `${prompt.slice(0, 44)}…` : prompt;
+    crumbTitle.textContent = activeConv.title;
+  }
+
+  activeConv.messages.push({ role: 'user', content: prompt, meta: '' });
+  appendMessageEl('user', prompt);
+  await saveActiveConversation();
+
   if (!isLocalDaemon) {
-    planEditor.value = '# План внедрения (Демо)\nЗапустите ./start_studio.sh локально для чтения реальной папки ~/.gemini/antigravity/brain/!';
-    taskEditor.value = '- [x] Этап 1: axiom-lang\n- [x] Этап 2: axiom-ui\n- [x] Этапы 3-4: axiom-studio';
-    appendChatMsg('assistant', 'Демо-сессия загружена! На вашей Linux-машине кнопка «Импорт из Antigravity» читает реальный transcript.jsonl.', 'Antigravity Brain');
+    const demoReply =
+      'Вы находитесь в **облачной демо-песочнице** на `axiom-lang.org`.\n\n' +
+      'Запустите `Axiom Studio` локально на вашем компьютере (`./launch_desktop.sh`), чтобы подключить автономного агента **Gemini 4 API** к файлам `~/Projects`.';
+    activeConv.messages.push({ role: 'assistant', content: demoReply, meta: 'Облачное демо' });
+    appendMessageEl('assistant', demoReply, 'Облачное демо');
+    await saveActiveConversation();
+    return;
+  }
+
+  btnSendChat.disabled = true;
+  const thinkingRow = appendMessageEl('assistant', 'Думаю и анализирую проект…', modelSelect.value);
+
+  try {
+    const proj = getProjectByName(activeConv.project);
+    const historyForApi = activeConv.messages.slice(-16).map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'gemini',
+        model: modelSelect.value,
+        prompt,
+        project_path: proj.path || '',
+        history: historyForApi,
+      }),
+    });
+    const d = await r.json();
+    thinkingRow.remove();
+
+    const stepIls = Number(d.cost_ils || 0);
+    if (stepIls > 0) {
+      spentIlsTotal += stepIls;
+      updateBudgetUi();
+    }
+
+    const totalTok = Number(d.input_tokens || 0) + Number(d.output_tokens || 0);
+    const metaStr = `${modelSelect.value} · ${stepIls.toFixed(3)} ₪ · ${totalTok} ток.`;
+    const replyText = d.reply || '(Пустой ответ от модели)';
+
+    activeConv.messages.push({ role: 'assistant', content: replyText, meta: metaStr });
+    appendMessageEl('assistant', replyText, metaStr);
+    await saveActiveConversation();
+
+    // Hot-reload CSS if agent edited styles.css
+    const cssLink = document.getElementById('studio-stylesheet');
+    if (cssLink && replyText.includes('styles.css')) {
+      cssLink.href = `./styles.css?v=${Date.now()}`;
+    }
+  } catch (err) {
+    thinkingRow.remove();
+    appendMessageEl('assistant', `Ошибка связи с локальным демоном: ${err}`, 'Ошибка');
+  } finally {
+    btnSendChat.disabled = false;
+    chatInput.focus();
+  }
+}
+
+chatForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  submitChat();
+});
+
+// IME-safe Enter-to-submit (modern-web-guidance: ime-safe-enter-submit)
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    if (event.isComposing || event.keyCode === 229) {
+      return;
+    }
+    chatForm.requestSubmit();
+  }
+});
+
+document.getElementById('btn-new-conv').addEventListener('click', () => startNewConversation(activeProjectName));
+document.getElementById('btn-quick-new').addEventListener('click', () => startNewConversation(activeProjectName));
+
+// --- Antigravity Brain History Importer ---
+async function importAntigravitySession(sessionId) {
+  if (!isLocalDaemon) {
+    activeConv.plan_md = '# План внедрения (Демо)\nЗапустите Axiom Studio локально для чтения ~/.gemini/antigravity/brain/.';
+    activeConv.task_md = '- [x] Этап 1: axiom-lang\n- [x] Этап 2: axiom-ui\n- [x] Этап 3: axiom-studio v2.0';
+    renderActiveConversation();
     return;
   }
 
@@ -293,38 +623,27 @@ async function importSessionById(sessionId) {
   const d = await r.json();
   if (!d.ok) return;
 
-  importedSessionId = d.id;
-  sessionPill.textContent = `Antigravity #${d.id.slice(0, 8)}`;
-  planEditor.value = d.implementation_plan || '';
-  taskEditor.value = d.task_md || '';
+  const firstUser = (d.messages || []).find((m) => m.role === 'user' && m.content);
+  const title = firstUser
+    ? (firstUser.content.length > 42 ? `${firstUser.content.slice(0, 42)}…` : firstUser.content)
+    : `Antigravity #${d.id.slice(0, 8)}`;
 
-  chatFeed.textContent = '';
-  chatHistory = [];
-  for (const m of d.messages || []) {
-    const toolsTxt = Array.isArray(m.tools) && m.tools.length ? ` [${m.tools.join(', ')}]` : '';
-    const text = m.content || `(Вызов инструментов:${toolsTxt})`;
-    chatHistory.push({ role: m.role, content: text });
-    appendChatMsg(m.role, text, `История Antigravity${toolsTxt}`);
-  }
-
-  appendChatMsg(
-    'assistant',
-    `Сессия Antigravity (${d.id.slice(0, 8)}..., всего шагов: ${d.total_messages}) и русские артефакты implementation_plan.md / task.md успешно перенесены в Axiom Studio! Можем продолжать разработку прямо отсюда.`,
-    'Готово к работе'
-  );
+  activeConv = {
+    id: `agy-${d.id.slice(0, 16)}`,
+    project: activeProjectName,
+    title,
+    updated_at: Math.floor(Date.now() / 1000),
+    messages: (d.messages || []).map((m) => ({
+      role: m.role,
+      content: m.content || `(Инструменты: ${(m.tools || []).join(', ')})`,
+      meta: 'История Antigravity',
+    })),
+    plan_md: d.implementation_plan || '',
+    task_md: d.task_md || '',
+  };
+  await saveActiveConversation();
+  renderActiveConversation();
 }
-
-document.getElementById('btn-new-chat')?.addEventListener('click', () => {
-  chatFeed.textContent = '';
-  chatHistory = [];
-  importedSessionId = '';
-  sessionPill.textContent = 'Новый чат';
-  appendChatMsg(
-    'assistant',
-    'Начат новый чистый диалог (история очищена для экономии токенов Gemini 4 API). Напишите вашу задачу по-русски — агент сам найдёт нужные файлы во всех репозиториях ~/Projects!',
-    'Чистая сессия'
-  );
-});
 
 document.getElementById('btn-open-import').addEventListener('click', async () => {
   const listEl = document.getElementById('session-list');
@@ -333,9 +652,9 @@ document.getElementById('btn-open-import').addEventListener('click', async () =>
   if (!isLocalDaemon) {
     const li = document.createElement('li');
     li.className = 'session-card';
-    li.textContent = 'Демо-сессия Stages 1–4 (Нажмите для загрузки примера)';
+    li.textContent = 'Демо-сессия Antigravity (нажмите для просмотра)';
     li.addEventListener('click', () => {
-      importSessionById('demo');
+      importAntigravitySession('demo');
       dialogImport.close();
     });
     listEl.appendChild(li);
@@ -349,15 +668,14 @@ document.getElementById('btn-open-import').addEventListener('click', async () =>
     const li = document.createElement('li');
     li.className = 'session-card';
     const title = document.createElement('div');
-    title.style.fontWeight = '700';
-    title.textContent = `${s.id.slice(0, 8)}... (${s.message_count} сообщ.) ${s.has_plan ? '[RU План ✓]' : ''}`;
+    title.style.fontWeight = '650';
+    title.textContent = `${s.id.slice(0, 8)}… (${s.message_count} сообщ.) ${s.has_plan ? '· RU План ✓' : ''}`;
     const sub = document.createElement('div');
-    sub.style.fontSize = '0.78rem';
-    sub.style.color = 'var(--muted)';
+    sub.className = 'setting-sub';
     sub.textContent = s.last_user_prompt || '(без текста)';
     li.append(title, sub);
     li.addEventListener('click', () => {
-      importSessionById(s.id);
+      importAntigravitySession(s.id);
       dialogImport.close();
     });
     listEl.appendChild(li);
@@ -365,28 +683,61 @@ document.getElementById('btn-open-import').addEventListener('click', async () =>
   dialogImport.showModal();
 });
 
-// 7. Save GEMINI_API_KEY Modal & Refresh Key Models
-document.getElementById('btn-open-key').addEventListener('click', () => {
-  dialogKey.showModal();
+// --- Settings Dialog (Theme, Scale, Key, Budget, Models) ---
+document.getElementById('btn-open-settings').addEventListener('click', () => {
+  dialogSettings.showModal();
+});
+
+document.querySelectorAll('[data-close-dialog]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.getElementById(btn.dataset.closeDialog)?.close();
+  });
+});
+
+// Theme persistence
+const savedTheme = localStorage.getItem('axiom_studio_theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+document.getElementById('btn-theme').addEventListener('click', () => {
+  const root = document.documentElement;
+  const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('axiom_studio_theme', next);
+});
+
+// Font Scale Controls
+let uiScale = Number(localStorage.getItem('axiom_studio_font_scale')) || 1.08;
+const fontResetBtn = document.getElementById('btn-font-reset');
+function applyUiScale(next) {
+  uiScale = Math.min(1.6, Math.max(0.85, Math.round(next * 100) / 100));
+  document.body.style.setProperty('--ui-scale', String(uiScale));
+  localStorage.setItem('axiom_studio_font_scale', String(uiScale));
+  if (fontResetBtn) fontResetBtn.textContent = `${Math.round(uiScale * 100)}%`;
+}
+applyUiScale(uiScale);
+
+document.getElementById('btn-font-dec').addEventListener('click', () => applyUiScale(uiScale - 0.08));
+document.getElementById('btn-font-inc').addEventListener('click', () => applyUiScale(uiScale + 0.08));
+fontResetBtn.addEventListener('click', () => applyUiScale(1.08));
+
+document.getElementById('btn-reset-budget').addEventListener('click', () => {
+  spentIlsTotal = 0;
+  updateBudgetUi();
 });
 
 document.getElementById('key-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const val = document.getElementById('key-input').value.trim();
-  if (!val || !isLocalDaemon) {
-    dialogKey.close();
-    return;
-  }
+  const inp = document.getElementById('key-input');
+  const val = inp.value.trim();
+  if (!val || !isLocalDaemon) return;
   const r = await fetch('/api/config/key', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ api_key: val }),
   });
   const d = await r.json();
-  document.getElementById('key-input').value = '';
-  dialogKey.close();
+  inp.value = '';
   if (d.ok) {
-    appendChatMsg('assistant', 'GEMINI_API_KEY сохранён локально в ~/.env (права 0600). Теперь доступен автономный агент Gemini 4!', 'Безопасность');
+    modelsSyncStatus.textContent = 'Ключ сохранён локально в ~/.env (права 0600)!';
   }
 });
 
@@ -404,30 +755,85 @@ document.getElementById('btn-refresh-models').addEventListener('click', async ()
         modelSelect.appendChild(opt);
       }
     }
-    shellOutput.textContent = `Загружено ${d.models.length} активных моделей с вашего ключа Gemini API.`;
+    modelsSyncStatus.textContent = `Загружено ${d.models.length} моделей с вашего API-ключа.`;
   } else {
-    shellOutput.textContent = 'Сначала добавьте GEMINI_API_KEY (кнопка «Ключ API»), чтобы запросить список моделей вашего аккаунта.';
+    modelsSyncStatus.textContent = 'Сначала сохраните GEMINI_API_KEY ниже.';
   }
 });
 
-// 8. Integrated Axiom-Shell Execution
-async function runShellCommand(cmd) {
-  if (!cmd.trim()) return;
+// --- On-Demand Drawer Tools: Files, Z3 Verify, Shell, WebGL2 GPU Core ---
+function syncProjectFilesSelect() {
+  const proj = getProjectByName(activeProjectName);
+  fileSelect.textContent = '';
+  for (const f of proj.files || []) {
+    const opt = document.createElement('option');
+    opt.value = `${proj.path}/${f}`;
+    opt.textContent = f;
+    fileSelect.appendChild(opt);
+  }
+  if (fileSelect.options.length > 0) {
+    openFilePath(fileSelect.options[0].value);
+  }
+}
+
+async function openFilePath(fullPath) {
+  currentFilePath = fullPath;
   if (!isLocalDaemon) {
-    shellOutput.textContent = `[CLOUD DEMO] $ ${cmd}\nЗапустите ./start_studio.sh на вашем Linux для выполнения реальных системных команд.`;
+    codeEditor.value = DEMO_CODE;
     return;
   }
+  const r = await fetch(`/api/file?path=${encodeURIComponent(fullPath)}`);
+  const d = await r.json();
+  if (d.ok) codeEditor.value = d.content || '';
+}
+
+fileSelect.addEventListener('change', () => openFilePath(fileSelect.value));
+
+document.getElementById('btn-save-file').addEventListener('click', async () => {
+  if (!isLocalDaemon || !currentFilePath) return;
+  const r = await fetch('/api/file', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: currentFilePath, content: codeEditor.value }),
+  });
+  const d = await r.json();
+  shellOutput.textContent = d.ok ? `Сохранено: ${currentFilePath}` : `Ошибка: ${d.error}`;
+});
+
+async function verifyCurrentAx() {
+  if (!isLocalDaemon || !currentFilePath.endsWith('.ax')) {
+    shellOutput.textContent = 'Выберите .ax файл во вкладке «Код» для проверки Z3 + Wasm.';
+    return;
+  }
+  openDrawerTab('shell');
+  shellOutput.textContent = `Проверка Z3 + Wasm: ${currentFilePath}...`;
+  const r = await fetch('/api/axiom/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: currentFilePath }),
+  });
+  const d = await r.json();
+  shellOutput.textContent = `${d.output || ''}\n[Z3: ${d.ok ? 'ДОКАЗАНО ✓' : 'ОШИБКА'} | Wasm: ${d.wasm_kb || 0} KB]`;
+}
+
+document.getElementById('btn-verify-ax').addEventListener('click', verifyCurrentAx);
+document.getElementById('btn-verify-ax-gpu').addEventListener('click', verifyCurrentAx);
+
+async function runShellCmd(cmd) {
+  if (!cmd.trim()) return;
+  if (!isLocalDaemon) {
+    shellOutput.textContent = `[DEMO] $ ${cmd}\nЗапустите ./launch_desktop.sh локально для выполнения команд.`;
+    return;
+  }
+  const proj = getProjectByName(activeProjectName);
   shellOutput.textContent = `$ ${cmd}\nВыполнение...`;
   const r = await fetch('/api/shell', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      cwd: currentProject ? currentProject.path : '',
-      cmd,
-    }),
+    body: JSON.stringify({ cwd: proj.path || '', cmd }),
   });
   const d = await r.json();
-  shellOutput.textContent = `${d.output || ''}\n[Код возврата: ${d.exit_code} | Лог: ${d.log_file || ''}]`;
+  shellOutput.textContent = `${d.output || ''}\n[Код: ${d.exit_code} | Лог: ${d.log_file || ''}]`;
 }
 
 document.getElementById('shell-form').addEventListener('submit', (e) => {
@@ -435,126 +841,150 @@ document.getElementById('shell-form').addEventListener('submit', (e) => {
   const inp = document.getElementById('shell-input');
   const cmd = inp.value;
   inp.value = '';
-  runShellCommand(cmd);
+  runShellCmd(cmd);
 });
 
 document.querySelectorAll('[data-quick-cmd]').forEach((btn) => {
-  btn.addEventListener('click', () => runShellCommand(btn.getAttribute('data-quick-cmd')));
+  btn.addEventListener('click', () => runShellCmd(btn.getAttribute('data-quick-cmd')));
 });
 
-// 9. Hybrid Chat Submission
-async function submitChat() {
-  const prompt = chatInput.value.trim();
-  if (!prompt) return;
-  chatInput.value = '';
-  appendChatMsg('user', prompt, aiMode.toUpperCase());
-  chatHistory.push({ role: 'user', content: prompt });
-
-  if (!isLocalDaemon) {
-    appendChatMsg(
-      'assistant',
-      `[Облачная демо-версия на ${window.location.hostname}]\n` +
-        `Локально на вашей машине (/home/aminadav/Projects/axiom-studio/start_studio.sh) этот запрос выполняется в выбранном режиме (${aiMode}): ` +
-        `либо за 0 ₪ через синхронизацию Google One Ultra, либо автономным циклом Gemini 4 Carbon с инструментами чтения/записи файлов и Z3!`,
-      '0.000 ₪'
-    );
-    return;
+// Lazy WebGL2 GPU Graph (`studio_core.wasm`)
+function buildUnicodeAtlas() {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 512, 512);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 22px "DejaVu Sans", "Liberation Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < 95; i++) {
+    ctx.fillText(String.fromCharCode(32 + i), (i % 16) * 32 + 16, Math.floor(i / 16) * 32 + 16);
   }
+  for (let i = 0; i < 64; i++) {
+    const idx = 96 + i;
+    ctx.fillText(String.fromCharCode(0x0410 + i), (idx % 16) * 32 + 16, Math.floor(idx / 16) * 32 + 16);
+  }
+  const extras = [[160, 'Ё'], [161, 'ё'], [162, '₪'], [163, '№'], [164, '—'], [165, '•'], [166, '✓']];
+  for (const [idx, ch] of extras) {
+    ctx.fillText(ch, (idx % 16) * 32 + 16, Math.floor(idx / 16) * 32 + 16);
+  }
+  return c;
+}
 
-  const sendBtn = document.getElementById('btn-send-chat');
-  sendBtn.disabled = true;
-  sendBtn.textContent = 'Думаю...';
-
+async function bootGpuCore() {
   try {
-    const r = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: aiMode,
-        model: modelSelect.value,
-        project_path: currentProject ? currentProject.path : null,
-        prompt,
-        history: chatHistory,
-        imported_plan: planEditor.value,
-        imported_task: taskEditor.value,
-        antigravity_session_id: importedSessionId,
-      }),
+    const gl = gpuCanvas.getContext('webgl2', { antialias: true, alpha: false });
+    if (!gl) return;
+    const vsSrc = `#version 300 es
+      layout(location=0) in vec2 a_pos;
+      layout(location=1) in vec2 a_uv;
+      layout(location=2) in vec4 a_col;
+      uniform vec2 u_res;
+      out vec2 v_uv;
+      out vec4 v_col;
+      void main() {
+        vec2 clip = (a_pos / u_res) * 2.0 - 1.0;
+        gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+        v_uv = a_uv;
+        v_col = a_col;
+      }`;
+    const fsSrc = `#version 300 es
+      precision mediump float;
+      in vec2 v_uv;
+      in vec4 v_col;
+      uniform sampler2D u_atlas;
+      out vec4 o_col;
+      void main() {
+        if (v_uv.x < 0.0) { o_col = v_col; }
+        else {
+          float a = texture(u_atlas, v_uv).a;
+          if (a < 0.05) discard;
+          o_col = vec4(v_col.rgb, v_col.a * a);
+        }
+      }`;
+    const compile = (type, src) => {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      return sh;
+    };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, vsSrc));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fsSrc));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, buildUnicodeAtlas());
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    const vbo = gl.createBuffer();
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 32, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 32, 8);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 32, 16);
+
+    const res = await fetch('./studio_core.wasm');
+    const bytes = await res.arrayBuffer();
+    const inst = await WebAssembly.instantiate(bytes, {
+      env: { abort: () => {}, print_i64: () => {} },
     });
-    const d = await r.json();
-    const costIls = Number(d.cost_ils || 0);
-    const agorot = Number(d.cost_agorot || 0);
-    spentAgorotTotal += agorot;
-    updateBudgetUi();
+    wasmExports = inst.instance.exports;
+    wasmMem = wasmExports.memory;
+    wasmExports.init_studio();
 
-    const tokInfo = d.input_tokens
-      ? `${costIls.toFixed(3)} ₪ (вх: ${d.input_tokens}, кэш: ${d.cached_tokens || 0}, вых: ${d.output_tokens || 0})`
-      : '0.000 ₪ (Ultra / Local)';
-    lastCostLabel.textContent = `Шаг: ${tokInfo}`;
+    const uRes = gl.getUniformLocation(prog, 'u_res');
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    let tracePrefix = '';
-    if (Array.isArray(d.tool_trace) && d.tool_trace.length > 0) {
-      tracePrefix = `[Инструменты (${d.tool_trace.length}): ${d.tool_trace.map((t) => t.tool).join(' -> ')}]\n\n`;
-    }
-    const fullReply = `${tracePrefix}${d.reply || '(готово)'}`;
-    appendChatMsg('assistant', fullReply, tokInfo);
-    chatHistory.push({ role: 'assistant', content: d.reply || '' });
-
-    // Hot-reload Studio CSS immediately if the agent edited Axiom Studio's own styles!
-    if (d.reload_studio_ui) {
-      const linkEl = document.getElementById('studio-stylesheet');
-      if (linkEl) linkEl.href = `./styles.css?v=${Date.now()}`;
-      appendChatMsg('assistant', 'Стили Axiom Studio обновлены на лету! (Для перезагрузки JS-скриптов нажмите F5 / Ctrl+R).', 'Live Hot-Reload');
-    }
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = 'Отправить';
+    const frame = () => {
+      if (!inspectorDrawer.hidden && !document.getElementById('panel-gpu').hidden) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(240, Math.floor(gpuCanvas.clientWidth));
+        const h = Math.max(200, Math.floor(gpuCanvas.clientHeight));
+        if (gpuCanvas.width !== Math.floor(w * dpr) || gpuCanvas.height !== Math.floor(h * dpr)) {
+          gpuCanvas.width = Math.floor(w * dpr);
+          gpuCanvas.height = Math.floor(h * dpr);
+        }
+        gl.viewport(0, 0, gpuCanvas.width, gpuCanvas.height);
+        gl.uniform2f(uRes, w, h);
+        gl.clearColor(0.028, 0.045, 0.095, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        const vCount = wasmExports.render_studio(w, h, 16);
+        const floats = new Float32Array(wasmMem.buffer, 65536, vCount * 8);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, floats, gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, vCount);
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  } catch (e) {
+    console.warn('GPU Core init skipped:', e);
   }
 }
 
-document.getElementById('chat-form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  submitChat();
-});
-
-chatInput.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-    e.preventDefault();
-    submitChat();
-  }
-});
-
-// Theme Toggle & Live Font Scale Controls (A- / 112% / A+)
-let uiScale = Number(localStorage.getItem('axiom_studio_font_scale')) || 1.12;
-const fontResetBtn = document.getElementById('btn-font-reset');
-
-function applyUiScale(next) {
-  uiScale = Math.min(1.65, Math.max(0.85, Math.round(next * 100) / 100));
-  document.body.style.setProperty('--ui-scale', String(uiScale));
-  localStorage.setItem('axiom_studio_font_scale', String(uiScale));
-  if (fontResetBtn) fontResetBtn.textContent = `${Math.round(uiScale * 100)}%`;
-}
-
-applyUiScale(uiScale);
-
-document.getElementById('btn-font-dec')?.addEventListener('click', () => applyUiScale(uiScale - 0.08));
-document.getElementById('btn-font-inc')?.addEventListener('click', () => applyUiScale(uiScale + 0.08));
-fontResetBtn?.addEventListener('click', () => applyUiScale(1.12));
-
-document.getElementById('btn-theme').addEventListener('click', () => {
-  const root = document.documentElement;
-  const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-  root.setAttribute('data-theme', next);
-});
-
-// 10. Boot Studio: Detect Local Native Rust Daemon vs Cloud Demo!
+// --- Boot Studio v2.0 ---
 async function bootStudio() {
+  updateBudgetUi();
+
   try {
     const r = await fetch('/api/status', { cache: 'no-store' });
     if (r.ok) {
       const st = await r.json();
       if (st.online) {
         isLocalDaemon = true;
-        daemonBadge.textContent = `Демон активен: ${st.rss_mb} МБ ОЗУ (vs 680 МБ Electron)`;
+        sidebarRamPill.textContent = `${st.rss_mb} МБ`;
+        daemonStatusText.textContent = `Активен на 127.0.0.1:7700 (${st.rss_mb} МБ ОЗУ vs ~680 МБ Electron)`;
       }
     }
   } catch {
@@ -565,51 +995,18 @@ async function bootStudio() {
     const pr = await fetch('/api/projects');
     const pd = await pr.json();
     projects = pd.projects || DEMO_PROJECTS;
-
-    // Auto-import the latest Antigravity conversation right on startup!
-    const sr = await fetch('/api/antigravity/sessions');
-    const sd = await sr.json();
-    if (Array.isArray(sd.sessions) && sd.sessions.length > 0) {
-      await importSessionById(sd.sessions[0].id);
-    }
   } else {
-    daemonBadge.textContent = 'Облачная Демо-Песочница (11.68 KB Wasm)';
     projects = DEMO_PROJECTS;
-    codeEditor.value = DEMO_CODE;
-    appendChatMsg(
-      'assistant',
-      'Добро пожаловать в Axiom Studio v1.4!\n' +
-        '• Слева — проводник всех репозиториев экосистемы Axiom.\n' +
-        '• В центре — аппаратный WebGL2 граф семантических узлов #hash с поддержкой русской кириллицы и символа ₪ в 1 GPU Draw Call.\n' +
-        '• Сверху — автономный агент Gemini 4 API со счётчиком шекелей и кнопкой «История Antigravity» для переноса контекста.',
-      'Автономная ИИ-Студия'
-    );
+    sidebarRamPill.textContent = 'Демо';
+    daemonStatusText.textContent = 'Облачная песочница (для локального доступа запустите ./launch_desktop.sh)';
   }
 
-  projectSelect.textContent = '';
-  projects.forEach((p, idx) => {
-    const opt = document.createElement('option');
-    opt.value = String(idx);
-    opt.textContent = p.name;
-    projectSelect.appendChild(opt);
-  });
-
-  projectSelect.addEventListener('change', () => {
-    currentProject = projects[Number(projectSelect.value)] || projects[0];
-    renderFileList();
-    if (currentProject && currentProject.files.length > 0) {
-      const preferred = currentProject.files.find((f) => f.endsWith('.ax')) || currentProject.files[0];
-      openFile(`${currentProject.path}/${preferred}`, preferred);
-    }
-  });
-
-  currentProject = projects[0];
-  renderFileList();
-  if (currentProject && currentProject.files.length > 0) {
-    const preferred = currentProject.files.find((f) => f.endsWith('.ax')) || currentProject.files[0];
-    await openFile(`${currentProject.path}/${preferred}`, preferred);
+  await refreshConversationsList();
+  if (conversations.length > 0) {
+    await openConversationById(conversations[0].id);
+  } else {
+    startNewConversation(projects[0]?.name || 'axiom-studio');
   }
-  updateBudgetUi();
 }
 
 bootStudio();
