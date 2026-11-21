@@ -1,33 +1,9 @@
 const DEMOS = {
   'axiom-studio': {
-    title: 'Axiom Studio v1.0 — Hybrid AI IDE & Multilingual GPU Graph',
-    size: '11.68 KB Wasm + 2.5 MB Daemon',
+    title: 'Axiom Studio — Native .axw AI IDE & Local Agent Daemon',
+    size: '114 KB .axw + 2.7 MB Daemon',
     url: '/axiom-studio/',
     repo: 'https://github.com/aminadav-ai/axiom-studio',
-  },
-  'axiom-grid': {
-    title: 'Axiom Grid v1.0 — 1,000,000-Cell GPU Spreadsheet',
-    size: '21.65 KB Wasm (7.93 KB gzip)',
-    url: '/axiom-grid/',
-    repo: 'https://github.com/aminadav-ai/axiom-grid',
-  },
-  'axiom-workspace': {
-    title: 'Axiom Workspace v1.0 — Multi-Window GPU Desktop OS',
-    size: '20.57 KB Wasm (6.84 KB gzip)',
-    url: '/axiom-workspace/',
-    repo: 'https://github.com/aminadav-ai/axiom-workspace',
-  },
-  'axiom-capsule-browser': {
-    title: 'Axiom Capsule Browser v1.0 — Gatekeeper & HTML Clean-Reader',
-    size: '21.21 KB Wasm (7.04 KB gzip)',
-    url: '/axiom-capsule-browser/',
-    repo: 'https://github.com/aminadav-ai/axiom-capsule-browser',
-  },
-  'axiom-ui': {
-    title: 'Axiom-UI v1.0 — Zero-DOM 1-Draw-Call GPU Widget Gallery',
-    size: '15.34 KB Wasm (5.38 KB gzip)',
-    url: '/axiom-ui/',
-    repo: 'https://github.com/aminadav-ai/axiom-ui',
   },
   'axiom-slipgate': {
     title: 'Axiom Slipgate v2.0 GPU HD — True-3D Polygonal Shooter',

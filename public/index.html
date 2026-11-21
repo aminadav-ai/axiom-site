@@ -46,9 +46,8 @@
         </p>
 
         <div class="hero-ctas">
-          <a class="btn btn-primary" href="#stage2-ui" data-launch-demo="axiom-studio">Launch Axiom Studio IDE (2.5 MB RAM)</a>
-          <a class="btn btn-emerald" href="#stage2-ui" data-launch-demo="axiom-workspace">Multi-Window GPU OS (20.57 KB)</a>
-          <a class="btn" href="#stage2-ui" data-launch-demo="axiom-grid">1,000,000-Cell GPU Sheet (21.65 KB)</a>
+          <a class="btn btn-primary" href="#stage2-ui" data-launch-demo="axiom-studio">Launch Axiom Studio IDE</a>
+          <a class="btn btn-emerald" href="https://github.com/aminadav-ai/axiom-web" target="_blank" rel="noopener">Axiom Web Browser (Native)</a>
           <a class="btn" href="#stage1-games" data-launch-demo="axiom-slipgate">Play 3D Shooter (30.38 KB)</a>
         </div>
 
@@ -166,116 +165,32 @@ Secret Data-Flow Pipes:
       </div>
     </section>
 
-    <!-- STAGE 2 SHOWCASE: AXIOM-UI ZERO-DOM HARDWARE GPU APPS -->
+    <!-- AXIOM STUDIO SHOWCASE -->
     <section id="stage2-ui" class="section">
       <div class="container">
         <div class="section-hdr">
-          <h2>Stage 2 Live Showcase: <code>axiom-ui</code> Zero-DOM Hardware GPU Suite</h2>
-          <p>Four complete desktop-class applications written <strong>100% in Axiom</strong> without a single HTML widget or CSS layout rule. Click any preview to run the live WebAssembly binary right on this page, or open it full-screen:</p>
+          <h2>Axiom Studio &amp; Native <code>axiom-web</code> Capsule Stack</h2>
+          <p>Zero-Chromium native IDE written <strong>100% in Axiom</strong> running inside the capability-gated <code>axiom-web</code> capsule browser with an isolated local <code>axiom-agentd</code> daemon:</p>
         </div>
 
         <div class="showcase-grid">
-          <!-- Axiom Studio v1.0 -->
+          <!-- Axiom Studio -->
           <article class="demo-card">
             <div class="demo-thumb-wrap" data-launch-demo="axiom-studio">
-              <img src="/previews/axiom-studio.png" alt="Axiom Studio v1.0 Hybrid AI IDE screenshot" loading="lazy">
+              <img src="/previews/axiom-studio.png" alt="Axiom Studio AI IDE screenshot" loading="lazy">
               <div class="demo-badges">
-                <span class="badge-dark">11.68 KB Wasm</span>
-                <span class="badge-dark">2.5 MB Daemon</span>
-                <span class="badge-dark">Stages 3 &amp; 4 IDE</span>
+                <span class="badge-dark">114 KB .axw</span>
+                <span class="badge-dark">2.7 MB Daemon</span>
+                <span class="badge-dark">Z3 Verified</span>
               </div>
             </div>
             <div class="demo-body">
-              <h3>Axiom Studio v1.0 — Hybrid AI IDE &amp; Shell</h3>
-              <p>Zero-Electron AI-agent IDE (<code>2.5 MB</code> Rust daemon vs <code>680 MB</code> Electron) with 1-draw-call multilingual (Latin + Cyrillic + <code>&#8362;</code>) WebGL2 <code>#hash</code> DAG, integrated <code>axiom-shell</code>, 1-click Antigravity session migration, and 3-mode AI (Google One Ultra, Gemini 4 Carbon API, Ollama).</p>
+              <h3>Axiom Studio — Native AI IDE &amp; Isolated Agent Daemon</h3>
+              <p>Zero-Electron AI-agent IDE running as a pure <code>.axw</code> capsule (<code>effects=[Gpu, Mem, Net]</code>) inside <code>axiom-web</code>, talking over authenticated loopback HTTP to the isolated <code>axiom-agentd</code> developer daemon.</p>
               <div class="demo-actions">
-                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-studio">Run Live Inline</button>
+                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-studio">Run Web Preview</button>
                 <a class="btn btn-sm" href="/axiom-studio/" target="_blank" rel="noopener">Fullscreen</a>
                 <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-studio" target="_blank" rel="noopener">GitHub Repo</a>
-              </div>
-            </div>
-          </article>
-
-          <!-- Axiom Grid -->
-          <article class="demo-card">
-            <div class="demo-thumb-wrap" data-launch-demo="axiom-grid">
-              <img src="/previews/axiom-grid.png" alt="Axiom Grid 1,000,000-cell GPU spreadsheet screenshot" loading="lazy">
-              <div class="demo-badges">
-                <span class="badge-dark">21.65 KB Wasm</span>
-                <span class="badge-dark">7.93 KB Gzip</span>
-                <span class="badge-dark">1,000,000 Cells</span>
-              </div>
-            </div>
-            <div class="demo-body">
-              <h3>Axiom Grid v1.0 — 1M-Cell GPU Spreadsheet</h3>
-              <p>Excel-class <code>1,000 &times; 1,000</code> (<code>A1..ALL1000</code>) virtualized spreadsheet with live <code>=SUM</code>, <code>=AVG</code>, <code>=MAX</code> &amp; cell arithmetic, emerald dependency highlighting, editable <code>fx</code> bar, live bound Q1–Q4 GPU charts, and Strata Time-Travel.</p>
-              <div class="demo-actions">
-                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-grid">Run Live Inline</button>
-                <a class="btn btn-sm" href="/axiom-grid/" target="_blank" rel="noopener">Fullscreen</a>
-                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-grid" target="_blank" rel="noopener">GitHub Repo</a>
-              </div>
-            </div>
-          </article>
-
-          <!-- Axiom Workspace -->
-          <article class="demo-card">
-            <div class="demo-thumb-wrap" data-launch-demo="axiom-workspace">
-              <img src="/previews/axiom-workspace.png" alt="Axiom Workspace 4-window GPU desktop OS screenshot" loading="lazy">
-              <div class="demo-badges">
-                <span class="badge-dark">20.57 KB Wasm</span>
-                <span class="badge-dark">6.84 KB Gzip</span>
-                <span class="badge-dark">1 Draw Call</span>
-              </div>
-            </div>
-            <div class="demo-body">
-              <h3>Axiom Workspace v1.0 — "The Electron Killer"</h3>
-              <p>Multi-window GPU Desktop OS featuring 4 overlapping, draggable, hardware-clipped resizable windows: live <code>Flux Secret&lt;T&gt;</code> Taint Graph, Electron vs Axiom RAM Stress-Test, Z3 Safe-Division Calculator, SDF Shader Studio, and full-OS Time-Travel.</p>
-              <div class="demo-actions">
-                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-workspace">Run Live Inline</button>
-                <a class="btn btn-sm" href="/axiom-workspace/" target="_blank" rel="noopener">Fullscreen</a>
-                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-workspace" target="_blank" rel="noopener">GitHub Repo</a>
-              </div>
-            </div>
-          </article>
-
-          <!-- Axiom Capsule Browser -->
-          <article class="demo-card">
-            <div class="demo-thumb-wrap" data-launch-demo="axiom-capsule-browser">
-              <img src="/previews/axiom-capsule-browser.png" alt="Axiom Capsule Browser prototype screenshot" loading="lazy">
-              <div class="demo-badges">
-                <span class="badge-dark">21.21 KB Wasm</span>
-                <span class="badge-dark">7.04 KB Gzip</span>
-                <span class="badge-dark">0.14 ms HTML Parse</span>
-              </div>
-            </div>
-            <div class="demo-body">
-              <h3>Axiom Capsule Browser v1.0 — Future + Legacy Web</h3>
-              <p>Working prototype of <code>axiom-web</code>: executes verified <code>.axw</code> capsules natively on GPU, halts spyware capsules <strong>before Wasm byte 0</strong> via <code>axiom.passport</code> (with network-stripped sandbox mode), and sanitizes legacy HTML in pure Axiom with zero JS executed.</p>
-              <div class="demo-actions">
-                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-capsule-browser">Run Live Inline</button>
-                <a class="btn btn-sm" href="/axiom-capsule-browser/" target="_blank" rel="noopener">Fullscreen</a>
-                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-capsule-browser" target="_blank" rel="noopener">GitHub Repo</a>
-              </div>
-            </div>
-          </article>
-
-          <!-- Axiom-UI Core Gallery -->
-          <article class="demo-card">
-            <div class="demo-thumb-wrap" data-launch-demo="axiom-ui">
-              <img src="/previews/axiom-ui.png" alt="Axiom-UI interactive component gallery screenshot" loading="lazy">
-              <div class="demo-badges">
-                <span class="badge-dark">15.34 KB Wasm</span>
-                <span class="badge-dark">5.38 KB Gzip</span>
-                <span class="badge-dark">0.20 ms Layout</span>
-              </div>
-            </div>
-            <div class="demo-body">
-              <h3>Axiom-UI v1.0 — Core Engine &amp; Widget Gallery</h3>
-              <p>Unified 1-Draw-Call SDF &amp; HiDPI 3-style Font Atlas engine: native GPU keyboard text input, tactile SDF switches, sliders, real-time anti-aliased vector waveform, Z3 layout proof inspector, 3 live themes, and 120-frame UI Time-Travel.</p>
-              <div class="demo-actions">
-                <button type="button" class="btn btn-sm btn-primary" data-launch-demo="axiom-ui">Run Live Inline</button>
-                <a class="btn btn-sm" href="/axiom-ui/" target="_blank" rel="noopener">Fullscreen</a>
-                <a class="btn btn-sm" href="https://github.com/aminadav-ai/axiom-ui" target="_blank" rel="noopener">GitHub Repo</a>
               </div>
             </div>
           </article>
@@ -462,18 +377,13 @@ Secret Data-Flow Pipes:
           </div>
 
           <div class="stage-item" data-state="done">
-            <div class="stage-top"><span>Stage 2 — axiom-ui</span><span class="pill">COMPLETED</span></div>
-            <p>Zero-DOM, Zero-CSS 1-Draw-Call WebGL2 SDF &amp; HiDPI Font Atlas UI engine powering <code>axiom-grid</code> (1M cells), <code>axiom-workspace</code> (4-window Desktop OS), and <code>axiom-capsule-browser</code>.</p>
+            <div class="stage-top"><span>Stage 2 — axiom-web</span><span class="pill">COMPLETED</span></div>
+            <p>Standalone capability-gated native <code>.axw</code> capsule browser (Vulkan/wgpu 1-draw-call SDF + Z-buffered 3D + HiDPI Font Atlas + Z3-verified <code>axiom.passport</code> Gatekeeper &amp; zero-JS HTML Clean-Reader).</p>
           </div>
 
           <div class="stage-item" data-state="done">
-            <div class="stage-top"><span>Stages 3 &amp; 4 — axiom-studio (+ shell)</span><span class="pill">COMPLETED</span></div>
-            <p>Ultra-lightweight native AI-agent IDE (<code>2.5 MB</code> RAM) built on <code>axiom-ui</code> with integrated <code>axiom-shell</code>, Cyrillic/UTF-8 GPU typography, Antigravity session migration, and 3-mode Hybrid AI (Ultra, Gemini 4, Ollama).</p>
-          </div>
-
-          <div class="stage-item">
-            <div class="stage-top"><span>Stage 5 — axiom-web</span><span class="pill">PROTOTYPE LIVE</span></div>
-            <p>Standalone capability-gated <code>.axw</code> capsule player combined with zero-JS Legacy HTML Clean-Reader (prototype live today in <code>axiom-capsule-browser</code>).</p>
+            <div class="stage-top"><span>Stage 3 — axiom-studio</span><span class="pill">COMPLETED</span></div>
+            <p>Native AI-agent IDE running as a pure <code>.axw</code> capsule inside <code>axiom-web</code> paired with the isolated <code>axiom-agentd</code> developer daemon (<code>2.7 MB</code>), Z3-verified core modules, and multi-provider LLM support.</p>
           </div>
 
           <div class="stage-item">
@@ -498,11 +408,11 @@ Secret Data-Flow Pipes:
       </div>
       <div>
         <a href="https://github.com/aminadav-ai/axiom-lang" target="_blank" rel="noopener">axiom-lang</a> &middot;
-        <a href="https://github.com/aminadav-ai/axiom-ui" target="_blank" rel="noopener">axiom-ui</a> &middot;
-        <a href="https://github.com/aminadav-ai/axiom-grid" target="_blank" rel="noopener">axiom-grid</a> &middot;
-        <a href="https://github.com/aminadav-ai/axiom-workspace" target="_blank" rel="noopener">axiom-workspace</a> &middot;
-        <a href="https://github.com/aminadav-ai/axiom-capsule-browser" target="_blank" rel="noopener">axiom-capsule-browser</a> &middot;
-        <a href="https://github.com/aminadav-ai/axiom-slipgate" target="_blank" rel="noopener">axiom-slipgate</a>
+        <a href="https://github.com/aminadav-ai/axiom-web" target="_blank" rel="noopener">axiom-web</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-studio" target="_blank" rel="noopener">axiom-studio</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-slipgate" target="_blank" rel="noopener">axiom-slipgate</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-color-lines" target="_blank" rel="noopener">axiom-color-lines</a> &middot;
+        <a href="https://github.com/aminadav-ai/axiom-lion-herd" target="_blank" rel="noopener">axiom-lion-herd</a>
       </div>
     </div>
   </footer>
